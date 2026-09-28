@@ -25,7 +25,8 @@ export const EAR_LINES = [
   [0, 20],   // helix and lobe
   [20, 35],  // antihelix
   [35, 47],  // tragus, canal, antitragus, concha
-  [47, 55],  // crura
+  [47, 50],  // inferior crus
+  [50, 55],  // superior crus (a separate ridge: not joined to the inferior crus)
 ];
 
 let loading = null;
