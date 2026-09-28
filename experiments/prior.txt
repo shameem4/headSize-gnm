@@ -1,0 +1,15 @@
+600 heads in 1.8s
+ipd_far          mean   61.7  SD   3.1 mm
+face_width       mean  144.4  SD   8.6 mm
+eye_width        mean   26.1  SD   1.3 mm
+bridge_width     mean   33.2  SD   2.9 mm
+pad_width        mean   25.1  SD   2.2 mm
+circumference    mean  563.3  SD  26.5 mm
+length           mean  194.1  SD  10.4 mm
+breadth          mean  156.8  SD   8.2 mm
+bitragion        mean  148.7  SD   8.2 mm
+ear_to_ear_arc   mean  346.4  SD  14.5 mm
+temple_width     mean  149.4  SD   8.5 mm
+eye_to_ear       mean  110.5  SD   6.9 mm
+ear_length       mean   61.1  SD   5.7 mm
+corr(circumference, others): {'ipd_far': np.float64(1.0), 'face_width': np.float64(0.67), 'eye_width': np.float64(0.75), 'bridge_width': np.float64(0.85), 'pad_width': np.float64(0.72), 'circumference': np.float64(0.65), 'length': np.float64(0.53), 'breadth': np.float64(0.56), 'bitragion': np.float64(0.6), 'ear_to_ear_arc': np.float64(0.47), 'temple_width': np.float64(0.63), 'eye_to_ear': np.float64(0.56), 'ear_length': np.float64(0.3)}

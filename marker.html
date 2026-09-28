@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>headSize marker</title>
+  <style>
+    body {
+      margin: 24px;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: #111;
+      background: #fff;
+    }
+    .instructions {
+      max-width: 640px;
+      line-height: 1.5;
+    }
+    .sheet {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14mm;
+      margin-top: 12mm;
+    }
+    /* Marker: black square is 45 mm (the SVG adds a 1-cell white margin: 56.25 mm total) */
+    .marker {
+      width: 56.25mm;
+      height: 56.25mm;
+      outline: 0.2mm dashed #999;  /* cut line */
+    }
+    .marker svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .ruler {
+      position: relative;
+      width: 100mm;
+      height: 8mm;
+      border-bottom: 0.4mm solid #000;
+    }
+    .ruler .tick {
+      position: absolute;
+      bottom: 0;
+      width: 0.3mm;
+      background: #000;
+    }
+    .ruler .label {
+      position: absolute;
+      top: -5mm;
+      font-size: 3mm;
+      transform: translateX(-50%);
+    }
+    .caption {
+      font-size: 3.2mm;
+    }
+    @media print {
+      .instructions { display: none; }
+      body { margin: 10mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="instructions">
+    <h1>headSize calibration marker</h1>
+    <ol>
+      <li>Print this page at <strong>100% / "Actual size"</strong> (turn off "Fit to page"; only the marker and ruler are printed).</li>
+      <li>Measure the <strong>100 mm line</strong> with a real ruler. If it isn't 100 mm, enter what you measured in the demo ("Printed 100 mm line measures"); that corrects for printer scaling.</li>
+      <li>Glue the marker to stiff card and cut along the dashed line. It must stay flat.</li>
+      <li>In the demo, click <strong>Calibrate with printed marker</strong>, take off glasses, hold the marker flat against your forehead, facing the camera, and keep still.</li>
+    </ol>
+  </div>
+
+  <div class="sheet">
+    <div class="marker" id="marker"></div>
+    <div>
+      <div class="ruler" id="ruler"></div>
+      <div class="caption">This line must measure exactly 100 mm.</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { loadAruco, markerSvg } from "./marker.js";
+
+    const ruler = document.getElementById("ruler");
+    for (let mm = 0; mm <= 100; mm += 5) {
+      const tick = document.createElement("div");
+      tick.className = "tick";
+      tick.style.left = `${mm}mm`;
+      tick.style.height = mm % 10 === 0 ? "6mm" : "3mm";
+      ruler.append(tick);
+      if (mm % 50 === 0) {
+        const label = document.createElement("div");
+        label.className = "label";
+        label.style.left = `${mm}mm`;
+        label.textContent = `${mm}`;
+        ruler.append(label);
+      }
+    }
+
+    const AR = await loadAruco();
+    document.getElementById("marker").innerHTML = markerSvg(AR);
+  </script>
+</body>
+</html>

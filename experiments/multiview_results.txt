@@ -1,0 +1,30 @@
+
+=== MediaPipe depth fidelity 1.0; sweep yaw +-25 deg, pitch +-10 deg, 40 frames  (N=200)
+  measure             pop SD |  RMSE 3D  R² 3D | RMSE sweep R² sweep
+  circumference         28.2 |      8.7   0.90 |        9.4     0.89
+  length                10.9 |      3.7   0.88 |        4.3     0.85
+  breadth                8.7 |      2.8   0.89 |        2.9     0.89
+  bitragion              8.5 |      1.9   0.95 |        1.9     0.95
+  ear_to_ear_arc        15.4 |      5.9   0.86 |        6.2     0.84
+  temple_width           8.7 |      1.2   0.98 |        1.3     0.98
+  bridge_projection      4.3 |      0.9   0.96 |        0.8     0.96
+
+=== MediaPipe depth fidelity 0.5; sweep yaw +-25 deg, pitch +-10 deg, 40 frames  (N=200)
+  measure             pop SD |  RMSE 3D  R² 3D | RMSE sweep R² sweep
+  circumference         28.2 |     11.5   0.83 |        9.4     0.89
+  length                10.9 |      5.7   0.73 |        4.3     0.85
+  breadth                8.7 |      2.8   0.90 |        2.9     0.89
+  bitragion              8.5 |      1.9   0.95 |        1.9     0.95
+  ear_to_ear_arc        15.4 |      6.3   0.83 |        6.2     0.84
+  temple_width           8.7 |      1.3   0.98 |        1.3     0.98
+  bridge_projection      4.3 |      1.9   0.81 |        0.8     0.96
+
+=== MediaPipe depth fidelity 0.5; sweep yaw +-15 deg, pitch +-10 deg, 40 frames  (N=200)
+  measure             pop SD |  RMSE 3D  R² 3D | RMSE sweep R² sweep
+  circumference         28.2 |     11.5   0.83 |       10.6     0.86
+  length                10.9 |      5.7   0.73 |        5.0     0.79
+  breadth                8.7 |      2.8   0.90 |        3.0     0.88
+  bitragion              8.5 |      1.9   0.95 |        1.9     0.95
+  ear_to_ear_arc        15.4 |      6.3   0.83 |        6.6     0.82
+  temple_width           8.7 |      1.3   0.98 |        1.3     0.98
+  bridge_projection      4.3 |      1.9   0.81 |        1.1     0.94

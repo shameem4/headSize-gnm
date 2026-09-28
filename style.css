@@ -1,0 +1,226 @@
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #000;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#webcam {
+  display: block;
+}
+
+#webcam.mirrored {
+  transform: scaleX(-1);
+  -webkit-transform: scaleX(-1);
+}
+
+/* --- Sidebar panel --- */
+.metrics-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #fff;
+  overflow: auto;
+}
+
+.metrics-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .8rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  opacity: .9;
+}
+
+.control.toggle input {
+  margin-right: 6px;
+  accent-color: #00ffc8;
+}
+
+/* --- Radio focus control --- */
+.control-group {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: .8rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  opacity: .9;
+}
+
+.control-group legend {
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.radio-options {
+  display: flex;
+  gap: 3px;
+}
+
+.radio-options label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.radio-options input[type="radio"] {
+  accent-color: #00ffc8;
+}
+
+/* --- Metric cards --- */
+.panel-body {
+  display: grid;
+  gap: 6px;
+}
+
+.metric-card {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 12px;
+  padding: 3px;
+}
+
+.metric-card h2 {
+  margin: 0 0 8px 0;
+  font-size: .9rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  opacity: .8;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 3px 0;
+  font-size: .95rem;
+}
+
+.metric-row .label {
+  opacity: .85;
+}
+
+.metric-row .value {
+  font-weight: 600;
+}
+
+/* Left-right layout: give left a sensible minimum */
+.app {
+  display: grid;
+  grid-template-columns: minmax(720px, 1fr) 360px; /* <- bigger left column */
+  gap: 16px;
+  width: 100vw;
+  height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
+  background: #000;
+}
+
+/* Ensure the left column is a real container and fills available space */
+.videoView {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;     /* center the scaled video */
+  justify-content: center; /* center the scaled video */
+}
+
+/* The inner shell must fill so absolute canvas can overlay */
+.video-shell {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Constrain media to the container (not viewport) */
+#webcam,
+#output_canvas {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+/* Canvas should overlay the video perfectly */
+#output_canvas,
+#output_canvas_3d {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+/* 3D canvas specific styles - no interaction, just overlay */
+#output_canvas_3d {
+  pointer-events: none; /* Allow clicks to pass through to video */
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: #00ffc8;
+  cursor: pointer;
+}
+/* Narrow screens: stack video above the panel and let the page scroll */
+@media (max-width: 1000px) {
+  body {
+    display: block;
+    overflow: auto;
+  }
+
+  .app {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .videoView {
+    height: 60vh;
+  }
+}
+
+/* Startup error message, centered over the video area */
+.status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  max-width: 80%;
+  margin: 0;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  text-align: center;
+}
+
+/* Article link and last-modified stamp */
+.page-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  font-size: .75rem;
+  color: rgba(255, 255, 255, 0.6);
+}

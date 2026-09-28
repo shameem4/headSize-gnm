@@ -1,0 +1,20 @@
+Concha region: 82 + 80 vertices
+Template: {'ear_length': np.float64(59.7), 'ear_width': np.float64(34.1), 'ear_protrusion': np.float64(25.1), 'concha_height': np.float64(18.4), 'concha_width': np.float64(17.1), 'concha_depth': np.float64(22.2)}
+
+=== A. iris scale (demo, uncalibrated)  (N=400)
+  measure           pop SD   RMSE     R²
+  ear_length           5.6    4.0   0.51
+  ear_width            4.3    3.7   0.24
+  ear_protrusion       5.3    4.5   0.26
+  concha_height        2.2    1.7   0.40
+  concha_width         2.0    1.6   0.31
+  concha_depth         5.1    4.6   0.20
+
+=== B. exact scale (calibrated)  (N=400)
+  measure           pop SD   RMSE     R²
+  ear_length           5.6    3.8   0.54
+  ear_width            4.3    3.5   0.31
+  ear_protrusion       5.3    4.5   0.28
+  concha_height        2.2    1.7   0.43
+  concha_width         2.0    1.5   0.42
+  concha_depth         5.1    4.6   0.20

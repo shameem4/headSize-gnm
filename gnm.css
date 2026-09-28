@@ -1,0 +1,201 @@
+/* GNM demo additions on top of ../style.css */
+
+#gnm_canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+
+#guide_canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+
+#gnm_canvas.mirrored,
+#guide_canvas.mirrored {
+  transform: scaleX(-1);
+}
+
+.progress {
+  height: 6px;
+  margin: 4px 0 8px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.progress-bar {
+  width: 0;
+  height: 100%;
+  background: #00ffc8;
+  transition: width 0.2s;
+}
+
+.control-button {
+  margin-top: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 200, 0.4);
+  background: rgba(0, 255, 200, 0.1);
+  color: #00ffc8;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+
+.metric-row .error {
+  opacity: 0.6;
+  font-weight: 400;
+  font-size: 0.8em;
+}
+
+.note {
+  margin: 0;
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+/* Capture guidance shown over the video (not mirrored, so text reads normally) */
+.guide-msg {
+  position: absolute;
+  transform: translate(-50%, -100%);   /* anchored at the video's bottom centre (set in JS) */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  z-index: 2;
+}
+
+.guide-msg[hidden] {
+  display: none;
+}
+
+.guide-msg.warn {
+  background: rgba(160, 60, 0, 0.8);
+}
+
+.glasses-status {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.glasses-status[hidden] {
+  display: none;
+}
+
+.snapshot-label {
+  margin-top: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.control-button.secondary {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 400;
+}
+
+/* Card calibration: frozen, pixelated view with draggable edge lines */
+.calib {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  overflow: hidden;
+  border-radius: 24px;
+}
+
+.calib[hidden] {
+  display: none;
+}
+
+.calib canvas {
+  display: block;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.calib-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.calib-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.calib-buttons button {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 200, 0.5);
+  background: rgba(0, 255, 200, 0.12);
+  color: #00ffc8;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.marker-row {
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 0.8rem;
+  margin-top: 6px;
+}
+
+.marker-row a {
+  color: #00ffc8;
+}
+
+.marker-row input {
+  width: 4.5em;
+  margin-left: 4px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.metric-row .label[title] {
+  cursor: help;
+}
+
+.metric-row .info {
+  font-size: 0.75em;
+  opacity: 0.5;
+}
