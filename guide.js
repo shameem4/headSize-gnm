@@ -165,7 +165,8 @@ export function createGuide(canvas, { focalNorm, mirrored }) {
     ctx.restore();
   }
 
-  /** Dots joined by polylines; points normalized (0..1), lines as [start, end) index ranges */
+  /** Dots joined by polylines, each dot numbered; points normalized (0..1), lines as
+   * [start, end) index ranges */
   function drawLines(points, lines, color = "#00ffc8") {
     ctx.save();
     ctx.strokeStyle = ctx.fillStyle = color;
@@ -175,7 +176,17 @@ export function createGuide(canvas, { focalNorm, mirrored }) {
       for (let i = a; i < b; i++) (i === a ? ctx.moveTo : ctx.lineTo).call(ctx, points[i].x * w, points[i].y * h);
       ctx.stroke();
     }
-    for (const p of points) ctx.fillRect(p.x * w - 2, p.y * h - 2, 4, 4);
+    ctx.font = "10px system-ui, sans-serif";
+    points.forEach((p, i) => {
+      const x = p.x * w, y = p.y * h;
+      ctx.fillRect(x - 2, y - 2, 4, 4);
+      // The canvas is shown mirrored: flip the text back so it reads normally
+      ctx.save();
+      ctx.translate(x, y);
+      if (mirrored) ctx.scale(-1, 1);
+      ctx.fillText(String(i), 3, -3);
+      ctx.restore();
+    });
     ctx.restore();
   }
 

@@ -769,7 +769,12 @@ async function earRecordFiles(name) {
       for (let i = a; i < b; i++) (i === a ? ctx.moveTo : ctx.lineTo).call(ctx, ...at(frame.landmarks[i]));
       ctx.stroke();
     }
-    for (const p of frame.landmarks) { const [u, v] = at(p); ctx.fillRect(u - 2, v - 2, 4, 4); }
+    ctx.font = "11px system-ui, sans-serif";
+    frame.landmarks.forEach((p, i) => {
+      const [u, v] = at(p);
+      ctx.fillRect(u - 2, v - 2, 4, 4);
+      ctx.fillText(String(i), u + 3, v - 3);
+    });
 
     let y = PAD + TILE + PAD + 20;
     ctx.fillStyle = "#00ffc8";
