@@ -39,8 +39,10 @@ const FOREHEAD_MID = 151;
 const EAR_FRAMES = 45;
 const EAR_TURN_MIN = 40;
 const EAR_TURN_MAX = 70;
-// Frames where the camera sees the ear plane too obliquely are skipped
-const EAR_MIN_VIEW_COS = 0.4;
+// Frames where the camera sees the ear plane more than 20° off square are skipped: widths
+// grow as the view gets more oblique (two real runs: 33 mm at <=20° vs 38 mm at ~27°,
+// ruler 33 mm), because they then hinge on the model's ear angle
+const EAR_MIN_VIEW_COS = Math.cos((20 * Math.PI) / 180);
 // Iris-scale size error (experiments/results.txt, scenario A)
 const IRIS_SCALE_SD = 0.041;
 
