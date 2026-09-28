@@ -80,11 +80,11 @@ const MESSAGES = {
 // Size always comes from the iris; GNM supplies the shape. GNM's own size estimate
 // (from face proportions) was ~5% off on the first real test, so it isn't used.
 const METRICS = [
-  { key: "circumference", label: "Circumference", group: "Hat", rmse: 22.7, rmseShape: 8.1,
+  { key: "circumference", label: "Circumference", group: "Head", rmse: 22.7, rmseShape: 8.1,
     desc: "Around the head just above the brows, like a tape measure for hat size. Hair not included." },
-  { key: "length", label: "Length", group: "Hat", rmse: 7.8, rmseShape: 3.4,
+  { key: "length", label: "Length", group: "Head", rmse: 7.8, rmseShape: 3.4,
     desc: "Front to back of the head at the hat band (brow to the back of the head)." },
-  { key: "breadth", label: "Breadth", group: "Hat", rmse: 6.6, rmseShape: 2.7,
+  { key: "breadth", label: "Breadth", group: "Head", rmse: 6.6, rmseShape: 2.7,
     desc: "Widest side-to-side distance of the head, above the ears." },
   { key: "temple_width", label: "Temple width", group: "Glasses", rmse: 6.1, rmseShape: 1.4,
     desc: "Width of the head at the temples, where a frame's arms pass: guides the frame's overall width." },
@@ -137,7 +137,7 @@ function noseBridge(projection) {
   return projection < BRIDGE_LOW_MM ? "low" : projection > BRIDGE_HIGH_MM ? "high" : "medium";
 }
 // Panel and snapshot order
-const GROUPS = ["Glasses", "Earbuds", "Headphones", "Hat", "Head"];
+const GROUPS = ["Glasses", "Earbuds", "Headphones", "Head"];
 
 // DOM
 const video = document.getElementById("webcam");
@@ -932,10 +932,14 @@ function renderPanel(values) {
     return `<div class="metric-row"><span class="label" title="${m.desc}">${m.label}&nbsp;<span class="info">ⓘ</span></span><span class="value">${value}</span><span class="error">${error}</span></div>`;
   };
   panelBody.innerHTML = GROUPS.map((group) => {
-    let rows = shownMetrics(values).filter((m) => m.group === group).map(row).join("");
-    if (group === "Hat" && values) {
-      rows += `<div class="metric-row"><span class="label" title="US hat size from the circumference.">US hat size&nbsp;<span class="info">ⓘ</span></span><span class="value">≈ ${usHatSize(values.circumference)}</span></div>`;
-    }
+    // US hat size goes right after the hat measurements (circumference, length, breadth)
+    let rows = shownMetrics(values).filter((m) => m.group === group).map((m) => {
+      let html = row(m);
+      if (m.key === "breadth" && values) {
+        html += `<div class="metric-row"><span class="label" title="US hat size from the circumference.">US hat size&nbsp;<span class="info">ⓘ</span></span><span class="value">≈ ${usHatSize(values.circumference)}</span></div>`;
+      }
+      return html;
+    }).join("");
     if (group === "Glasses" && values) {
       rows += `<div class="metric-row"><span class="label" title="From the bridge projection: low, medium or high compared with the GNM Head population (thirds). A low bridge suits low-bridge-fit frames or adjustable nose pads.">Nose bridge&nbsp;<span class="info">ⓘ</span></span><span class="value">${noseBridge(values.bridge_projection)}</span></div>`;
     }

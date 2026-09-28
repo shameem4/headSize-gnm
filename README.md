@@ -8,7 +8,6 @@ Demo: https://shameem4.github.io/headSize-gnm/ · Companion face-only demo: [hea
 
 Hover over any measurement in the app for a description.
 
-- **Hat:** head circumference (with a US hat size), length, breadth
 - **Glasses:**
   - temple width, eye to ear (arm length)
   - IPD (measured directly from the pupils)
@@ -16,7 +15,7 @@ Hover over any measurement in the app for a description.
   - nose bridge projection and height, with a low / medium / high category
 - **Headphones:** ear to ear, straight and over the head
 - **Earbuds:** ear length and width, concha height and width, and the tragus-to-antitragus gap. These are measured from side views with "Measure ears".
-- **Face:** face width, eye width
+- **Head (and hat):** circumference (with a US hat size), length, breadth, face width, eye width
 
 Each value shows a typical error. For most values it comes from simulation (see [experiments](experiments/)); for the ear measurements it's the frame-to-frame spread. The model's heads are bald, so allow extra for hair.
 
