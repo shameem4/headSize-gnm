@@ -41,9 +41,9 @@
             <div class="calib-bar">
               <span id="calib_text"></span>
               <div class="calib-buttons">
-                <button type="button" id="calib_confirm">Confirm</button>
-                <button type="button" id="calib_retake">Retake</button>
-                <button type="button" id="calib_cancel">Cancel</button>
+                <button type="button" id="calib_confirm" title="Use these edges to calibrate">Confirm</button>
+                <button type="button" id="calib_retake" title="Take a new picture of the card">Retake</button>
+                <button type="button" id="calib_cancel" title="Stop calibrating">Cancel</button>
               </div>
             </div>
           </div>
@@ -54,7 +54,7 @@
     <aside class="metrics-panel">
       <div class="metrics-controls">
         <label class="control toggle">
-          <input type="checkbox" id="mesh_toggle" checked />
+          <input type="checkbox" id="mesh_toggle" checked title="Show or hide the fitted head's wireframe over the video" />
           <span>Head mesh</span>
         </label>
       </div>
@@ -64,18 +64,16 @@
         <div class="progress"><div class="progress-bar" id="progress_bar"></div></div>
         <div class="metric-row"><span class="label" id="fit_status">Waiting for a face</span></div>
         <div class="metric-row"><span class="label">Size from</span><span class="value" id="scale_status">--</span></div>
-        <button class="control-button" id="remeasure" type="button">Measure again</button>
-        <button class="control-button" id="measure_ears" type="button">Measure ears</button>
-        <button class="control-button" id="calibrate_card" type="button">Calibrate with a card</button>
-        <button class="control-button" id="calibrate_marker" type="button">Calibrate with printed marker</button>
+        <button class="control-button" id="remeasure" type="button" title="Start over: line up in the oval and hold still while your head is measured">Measure again</button>
+        <button class="control-button" id="measure_ears" type="button" title="After measuring your head: turn about 50° to each side while your ears are measured (spoken prompts guide you)">Measure ears</button>
+        <button class="control-button" id="calibrate_card" type="button" title="Measure your own iris size with any bank-card-sized card held against your forehead; the card's face is pixelated">Calibrate with a card</button>
+        <button class="control-button" id="calibrate_marker" type="button" title="Measure your own iris size with the printed marker held against your forehead (print it first)">Calibrate with printed marker</button>
         <div class="metric-row marker-row">
-          <a href="marker.html" target="_blank" rel="noopener">Print the marker</a>
-          <label>Printed 100 mm line measures
-            <input type="number" id="ruler_mm" min="90" max="110" step="0.5" value="100" /> mm</label>
+          <a href="marker.html" target="_blank" rel="noopener" title="Open the printable calibration marker (print at 100% / Actual size)">Print the marker</a>
         </div>
-        <button class="control-button secondary" id="calib_reset" type="button" hidden>Reset calibration</button>
-        <input class="snapshot-label" id="snapshot_label" type="text" placeholder="Snapshot label, e.g. with glasses" />
-        <button class="control-button" id="snapshot" type="button">Save snapshot</button>
+        <button class="control-button secondary" id="calib_reset" type="button" hidden title="Forget your calibration and go back to the average iris size (11.7 mm)">Reset calibration</button>
+        <input class="snapshot-label" id="snapshot_label" type="text" placeholder="Enter your name" title="Optional: your name, added to the snapshot's file names and table" />
+        <button class="control-button" id="snapshot" type="button" title="Download a zip: the head image and measurements, plus the calibration and ear records if you did those">Save snapshot</button>
       </div>
 
       <div class="panel-body" id="metrics_panel_body"></div>

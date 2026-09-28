@@ -181,16 +181,6 @@
   color: #00ffc8;
 }
 
-.marker-row input {
-  width: 4.5em;
-  margin-left: 4px;
-  padding: 2px 4px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-}
-
 .metric-row .label[title] {
   cursor: help;
 }
@@ -198,4 +188,38 @@
 .metric-row .info {
   font-size: 0.75em;
   opacity: 0.5;
+}
+
+/* Measurement tables: name | value | error, alternate shading */
+.panel-body .metric-card {
+  padding: 8px 8px 6px;
+}
+
+.panel-body .metric-card h2 {
+  margin: 0 0 4px;
+  padding: 0 6px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  color: #00ffc8;
+  opacity: 1;
+}
+
+.panel-body .metric-row {
+  display: grid;
+  grid-template-columns: 1fr auto 3.6em;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.panel-body .metric-row:nth-of-type(even) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.panel-body .metric-row .value,
+.panel-body .metric-row .error {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }

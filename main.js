@@ -28,7 +28,6 @@ const GLASSES_WINDOW = 15;
 const CALIBRATION_FRAMES = 30;
 const CALIBRATION_SD = 0.015;
 const IRIS_STORAGE_KEY = "headsize.irisMm";
-const RULER_STORAGE_KEY = "headsize.rulerMm";
 // After marker calibration, frames without the marker before measuring starts (~1 s)
 const LOWER_FRAMES = 30;
 // Where the card rests: mid-forehead landmark
@@ -91,16 +90,16 @@ const METRICS = [
     desc: "Width of the head at the temples, where a frame's arms pass: guides the frame's overall width." },
   { key: "eye_to_ear", label: "Eye to ear", group: "Glasses", rmse: 6.1, rmseShape: 4.5,
     desc: "Front of the eye to the top of the ear on the same side: guides the length of the frame's arms." },
-  { key: "ipd_far", label: "IPD (far, measured)", group: "Glasses", rmse: 2.4, rmseShape: 0.5,
+  { key: "ipd_far", label: "IPD (far)", group: "Glasses", rmse: 2.4, rmseShape: 0.5,
     desc: "Pupillary distance for distance vision: pupil centre to pupil centre, measured directly and corrected for the eyes turning in to look at the camera." },
   { key: "bridge_width", label: "Bridge width", group: "Glasses", rmse: 1.5, rmseShape: 0.5,
     desc: "Width of the nose at eye level, between the inner eye corners: where a frame's bridge sits." },
   { key: "pad_width", label: "Pad width", group: "Glasses", rmse: 1.3, rmseShape: 0.5,
     desc: "Width of the nose a little lower, on its sides at about lower-eyelid level: where a frame's nose pads rest." },
   // experiments/nose_check.py
-  { key: "bridge_projection", label: "Nose bridge projection", group: "Glasses", rmse: 0.9, rmseShape: 0.9,
+  { key: "bridge_projection", label: "Bridge projection", group: "Glasses", rmse: 0.9, rmseShape: 0.9,
     desc: "How far the top of the nose (between the eyes) stands in front of the inner eye corners. Low values mean a low nose bridge: frames tend to slide down or rest on the cheeks." },
-  { key: "bridge_height", label: "Bridge height vs pupils", group: "Glasses", rmse: 0.5, rmseShape: 0.5,
+  { key: "bridge_height", label: "Bridge height", group: "Glasses", rmse: 0.5, rmseShape: 0.5,
     desc: "Height of the top of the nose relative to the pupils (negative = below them). A lower-set bridge also points to a low-bridge fit." },
   { key: "bitragion", label: "Ear to ear (straight)", group: "Headphones", rmse: 6.2, rmseShape: 1.8,
     desc: "Straight line between the fronts of the ears: how far apart headphone cups sit." },
@@ -119,9 +118,9 @@ const METRICS = [
     desc: "Width of the bowl in front of the ear canal, across the ear's axis." },
   { key: "tragus_gap", label: "Tragus to antitragus", group: "Earbuds", measured: true,
     desc: "Gap between the small flap in front of the ear canal (tragus) and the bump below it (antitragus): the notch an earbud's stem passes through." },
-  { key: "face_width", label: "Face width", group: "Face", rmse: 5.9, rmseShape: 0.7,
+  { key: "face_width", label: "Face width", group: "Head", rmse: 5.9, rmseShape: 0.7,
     desc: "Width of the face at eye level, from one side of the face outline to the other." },
-  { key: "eye_width", label: "Eye width", group: "Face", rmse: 0.9, rmseShape: 0.3,
+  { key: "eye_width", label: "Eye width", group: "Head", rmse: 0.9, rmseShape: 0.3,
     desc: "Average width of each eye, corner to corner." },
 ];
 
@@ -137,7 +136,8 @@ function shownMetrics(values) {
 function noseBridge(projection) {
   return projection < BRIDGE_LOW_MM ? "low" : projection > BRIDGE_HIGH_MM ? "high" : "medium";
 }
-const GROUPS = [...new Set(METRICS.map((m) => m.group))];
+// Panel and snapshot order
+const GROUPS = ["Head", "Glasses", "Earbuds", "Headphones", "Hat"];
 
 // DOM
 const video = document.getElementById("webcam");
@@ -234,15 +234,6 @@ function saveIris(value) {
   }
 }
 
-function loadRuler() {
-  try {
-    const v = parseFloat(localStorage.getItem(RULER_STORAGE_KEY));
-    return Number.isFinite(v) ? v : 100;
-  } catch {
-    return 100;
-  }
-}
-
 function makeMeasurer() {
   return createMeasurer(
     { ...CAMERA_CONFIG, depthScale: 1, irisDiameterMm: irisMm ?? CAMERA_CONFIG.irisDiameterMm },
@@ -327,7 +318,7 @@ function markerStep(landmarks, m, still) {
   if (!found) return showMessage(MESSAGES.marker);
   if (!still) return showMessage(MESSAGES.still, { warn: true });
 
-  const objectMm = (MARKER_MM * Number(document.getElementById("ruler_mm").value || 100)) / 100;
+  const objectMm = MARKER_MM;   // printed at 100% (the marker page's ruler checks that)
   calibrationFrames.push(
     irisFromCard({
       cardPx: found.sizePx,
@@ -357,7 +348,7 @@ function markerStep(landmarks, m, still) {
   if (!(iris >= IRIS_MIN_MM && iris <= IRIS_MAX_MM)) {
     showMessage(
       `That gives an iris of ${iris.toFixed(2)} mm, outside the human range. ` +
-        "Check the marker was printed at 100% and the ruler value, then try again.",
+        "Check the marker was printed at 100% (\"Actual size\"), then try again.",
       { warn: true }
     );
     return;
@@ -624,7 +615,7 @@ function earStep(landmarks, pose, still) {
         plane: { centroid: plane.centroid, normal: plane.normal },
       };
       if (marker) {
-        const sideMm = (MARKER_MM * Number(document.getElementById("ruler_mm").value || 100)) / 100;
+        const sideMm = MARKER_MM;
         frame.marker = { corners: marker.corners.map((p) => [+p.x.toFixed(1), +p.y.toFixed(1)]), ...markerCheck(marker.corners, planeMm, W, H, focalPx, sideMm), sideMm };
       }
       // Crop of the ear as measured (the ear record is saved from these, since by the time
@@ -936,16 +927,17 @@ function errorFor(metric, value) {
 function renderPanel(values) {
   const row = (m) => {
     const v = values?.[m.key];
-    const value = v == null ? "--" : `${v.toFixed(1)} mm <span class="error">±${errorFor(m, v).toFixed(1)}</span>`;
-    return `<div class="metric-row"><span class="label" title="${m.desc}">${m.label} <span class="info">ⓘ</span></span><span class="value">${value}</span></div>`;
+    const value = v == null ? "--" : `${v.toFixed(1)} mm`;
+    const error = v == null ? "" : `±${errorFor(m, v).toFixed(1)}`;
+    return `<div class="metric-row"><span class="label" title="${m.desc}">${m.label}&nbsp;<span class="info">ⓘ</span></span><span class="value">${value}</span><span class="error">${error}</span></div>`;
   };
   panelBody.innerHTML = GROUPS.map((group) => {
     let rows = shownMetrics(values).filter((m) => m.group === group).map(row).join("");
     if (group === "Hat" && values) {
-      rows += `<div class="metric-row"><span class="label" title="US hat size from the circumference.">US hat size <span class="info">ⓘ</span></span><span class="value">≈ ${usHatSize(values.circumference)}</span></div>`;
+      rows += `<div class="metric-row"><span class="label" title="US hat size from the circumference.">US hat size&nbsp;<span class="info">ⓘ</span></span><span class="value">≈ ${usHatSize(values.circumference)}</span></div>`;
     }
     if (group === "Glasses" && values) {
-      rows += `<div class="metric-row"><span class="label" title="From the bridge projection: low, medium or high compared with the GNM Head population (thirds). A low bridge suits low-bridge-fit frames or adjustable nose pads.">Nose bridge <span class="info">ⓘ</span></span><span class="value">${noseBridge(values.bridge_projection)}</span></div>`;
+      rows += `<div class="metric-row"><span class="label" title="From the bridge projection: low, medium or high compared with the GNM Head population (thirds). A low bridge suits low-bridge-fit frames or adjustable nose pads.">Nose bridge&nbsp;<span class="info">ⓘ</span></span><span class="value">${noseBridge(values.bridge_projection)}</span></div>`;
     }
     return `<div class="metric-card"><h2>${group}</h2>${rows}</div>`;
   }).join("");
@@ -978,15 +970,6 @@ function setupControls() {
   document.getElementById("calibrate_card").addEventListener("click", startCalibration);
   document.getElementById("calibrate_marker").addEventListener("click", startMarkerCalibration);
   document.getElementById("measure_ears").addEventListener("click", startEars);
-  const ruler = document.getElementById("ruler_mm");
-  ruler.value = loadRuler();
-  ruler.addEventListener("change", () => {
-    try {
-      localStorage.setItem(RULER_STORAGE_KEY, ruler.value);
-    } catch {
-      // storage unavailable
-    }
-  });
   document.getElementById("calib_reset").addEventListener("click", () => {
     irisMm = null;
     calibrationRecord = null;
