@@ -137,7 +137,7 @@ function noseBridge(projection) {
   return projection < BRIDGE_LOW_MM ? "low" : projection > BRIDGE_HIGH_MM ? "high" : "medium";
 }
 // Panel and snapshot order
-const GROUPS = ["Head", "Glasses", "Earbuds", "Headphones", "Hat"];
+const GROUPS = ["Glasses", "Earbuds", "Headphones", "Hat", "Head"];
 
 // DOM
 const video = document.getElementById("webcam");
