@@ -4,7 +4,7 @@ Estimates the head, face and ear dimensions that matter for fitting glasses, ear
 
 Everything runs locally. No video or measurement leaves the device unless you save a snapshot.
 
-**Demo:** https://shameem4.github.io/headSize-gnm/ · Companion face-only demo: [headSize](https://github.com/shameem4/headSize)
+**Demo:** https://shameem4.github.io/headSize-gnm/ · Article: *Measuring the Whole Head, Privately, in the Browser* (LinkedIn, link coming soon) <!-- TODO: replace with the LinkedIn article URL once published --> · Companion face-only demo: [headSize](https://github.com/shameem4/headSize) ([article](https://www.linkedin.com/pulse/measuring-human-face-privately-browser-shameem-hameed-51okc/))
 
 > **Status: research prototype.** The simulation results are best cases, and real-world checks so far cover **one person**. Treat the numbers as coarse sizing (S/M/L-style), not as a fitting-room measurement.
 
