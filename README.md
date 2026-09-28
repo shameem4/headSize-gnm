@@ -43,7 +43,7 @@ flowchart TD
 **Checked on one real person:**
 - IPD 68.3–68.6 mm against 68 mm from a lens prescription, after calibration.
 - Head circumference 558–576 mm against ~580 mm by tape.
-- Right ear 67.4 × 33.1 mm against ~68 × 33 mm by ruler.
+- Right ear length 68–70.5 mm and width ~37.5 mm over several runs (after each run's scale error), against ~68 mm and >36 mm by ruler. Width runs from where the top of the ear joins the head to the back of the rim, across the ear's axis.
 
 This is encouraging, but it's one person. See [experiments/README.md](experiments/README.md) for the simulations, the limits, and ideas that didn't work, including a multi-view "sweep" fit.
 
