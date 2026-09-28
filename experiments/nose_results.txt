@@ -1,0 +1,16 @@
+Template: {'bridge_projection': np.float64(12.7), 'bridge_height': np.float64(-2.7)}
+
+=== A. iris scale  (N=400)
+  measure            pop mean  pop SD   RMSE     R²  tercile agreement
+  bridge_projection      12.5     4.1    0.9   0.95  84% same third, 0.0% low<->high
+  bridge_height          -2.8     1.7    0.5   0.90  82% same third, 0.0% low<->high
+
+=== B. exact scale  (N=400)
+  measure            pop mean  pop SD   RMSE     R²  tercile agreement
+  bridge_projection      12.5     4.1    0.9   0.96  86% same third, 0.0% low<->high
+  bridge_height          -2.8     1.7    0.5   0.91  82% same third, 0.0% low<->high
+
+=== D. MediaPipe captures 70% of individual shape  (N=400)
+  measure            pop mean  pop SD   RMSE     R²  tercile agreement
+  bridge_projection      12.5     4.1    1.5   0.86  78% same third, 0.0% low<->high
+  bridge_height          -2.8     1.7    0.8   0.78  78% same third, 0.0% low<->high

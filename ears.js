@@ -50,10 +50,12 @@ export function loadEarPipeline() {
 }
 
 /**
- * Find ears in a head-sized crop around the face
- * @returns {Promise<Array<{bbox, confidence, landmarks}>>} in video pixels
+ * Find ears in a head-sized crop around the face (a fresh canvas per call, so overlapping
+ * calls can't share pixels)
+ * @returns {Promise<{ears: Array<{bbox, confidence, landmarks}>, crop: {canvas, x, y}}>}
+ *   ears in video pixels; crop: the searched square and its position in the frame
  */
-export async function detectEars(pipeline, video, faceLandmarks, crop) {
+export async function detectEars(pipeline, video, faceLandmarks) {
   const W = video.videoWidth, H = video.videoHeight;
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
   for (const p of faceLandmarks) {
@@ -62,14 +64,18 @@ export async function detectEars(pipeline, video, faceLandmarks, crop) {
   const side = Math.min(W, H, Math.round(HEAD_CROP * (y1 - y0) * H));
   const cx = Math.round(Math.max(0, Math.min(W - side, ((x0 + x1) / 2) * W - side / 2)));
   const cy = Math.round(Math.max(0, Math.min(H - side, ((y0 + y1) / 2) * H - side / 2)));
+  const crop = document.createElement("canvas");
   crop.width = crop.height = side;
   crop.getContext("2d").drawImage(video, cx, cy, side, side, 0, 0, side, side);
   const results = await pipeline.detect(crop);
-  return results.map((r) => ({
-    confidence: r.confidence,
-    bbox: { xmin: r.bbox.xmin + cx, xmax: r.bbox.xmax + cx, ymin: r.bbox.ymin + cy, ymax: r.bbox.ymax + cy },
-    landmarks: r.landmarks.map((p) => ({ x: p.x + cx, y: p.y + cy })),
-  }));
+  return {
+    ears: results.map((r) => ({
+      confidence: r.confidence,
+      bbox: { xmin: r.bbox.xmin + cx, xmax: r.bbox.xmax + cx, ymin: r.bbox.ymin + cy, ymax: r.bbox.ymax + cy },
+      landmarks: r.landmarks.map((p) => ({ x: p.x + cx, y: p.y + cy })),
+    })),
+    crop: { canvas: crop, x: cx, y: cy },
+  };
 }
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -81,7 +87,7 @@ const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a
  * Camera-frame ray through video pixel (u, v), in the observation frame (x right,
  * y up, camera looking down -z; see observe() in main.js)
  */
-export function pixelRay(u, v, W, H, focalPx) {
+function pixelRay(u, v, W, H, focalPx) {
   return [(u - W / 2) / focalPx, -(v - H / 2) / focalPx, -1];
 }
 
@@ -182,8 +188,7 @@ export function markerCheck(corners, plane, W, H, focalPx, sideMm) {
   });
   const h = solve(A, b);
   const h1 = [h[0], h[3], h[6]], h2 = [h[1], h[4], h[7]], h3 = [h[2], h[5], 1];
-  let lambda = 2 / (norm(h1) + norm(h2));
-  if (lambda * h3[2] < 0) lambda = -lambda;               // marker in front of the camera
+  const lambda = 2 / (norm(h1) + norm(h2));
   const r1 = h1.map((v) => v * lambda), r2 = h2.map((v) => v * lambda), t = h3.map((v) => v * lambda);
   const centre = [0, 1, 2].map((k) => ((r1[k] + r2[k]) * sideMm) / 2 + t[k]);
   const toObs = (v) => [v[0], -v[1], -v[2]];

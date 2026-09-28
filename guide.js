@@ -142,7 +142,7 @@ export function createGuide(canvas, { focalNorm, mirrored }) {
   }
 
   /**
-   * @param {"align"|"capture"|"done"} phase
+   * @param {string} phase - "align" draws the oval, "capture" the progress line; others nothing
    * @param {Array|null} lm - landmarks, if a face is visible
    * @param {boolean} aligned - head currently in position
    * @param {number} fraction - capture progress 0..1

@@ -12,7 +12,7 @@
  */
 
 // ISO/IEC 7810 ID-1 (bank card) width
-export const CARD_WIDTH_MM = 85.6;
+const CARD_WIDTH_MM = 85.6;
 // Plausible human iris diameters; outside this the edges were probably misplaced
 export const IRIS_MIN_MM = 10;
 export const IRIS_MAX_MM = 13.5;
@@ -56,7 +56,7 @@ export function irisFromCard({ cardPx, irisPx, zEyes, zForehead, focalNorm, dept
  * @param {{centerX: number, centerY: number, expected: number}} guess - video px
  * @returns {{left: number, right: number, confidence: number}|null}
  */
-export function findCardEdges(frame, { centerX, centerY, expected }) {
+function findCardEdges(frame, { centerX, centerY, expected }) {
   const x0 = Math.max(1, Math.round(centerX - 0.9 * expected));
   const x1 = Math.min(frame.width - 2, Math.round(centerX + 0.9 * expected));
   const y0 = Math.max(0, Math.round(centerY - 0.2 * expected));

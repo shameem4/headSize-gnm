@@ -5,11 +5,9 @@
  */
 
 const ARUCO_BASE = "https://cdn.jsdelivr.net/npm/js-aruco2@2.0.0/src";
-export const MARKER_ID = 0;
+const MARKER_ID = 0;
 // Side of the marker's black square when printed at 100%
 export const MARKER_MM = 45;
-// The library's SVG has a 1-cell white margin: black square = 8 of its 10 cells
-export const SVG_TO_BLACK = 8 / 10;
 // Search window around the forehead, in expected marker widths
 const SEARCH_WIDTHS = 3;
 

@@ -16,8 +16,8 @@
  * Rimless glasses scored like bare skin and are not detected.
  */
 
-export const BRIDGE_THRESHOLD = 0.8;
-export const RIM_THRESHOLD = 0.45;
+const BRIDGE_THRESHOLD = 0.8;
+const RIM_THRESHOLD = 0.45;
 
 /** Decide from recent scores: median of either cue above the threshold */
 export function looksLikeGlasses(scores) {
@@ -104,5 +104,5 @@ export function createGlassesDetector() {
     return { bridge: best / (std + 8), rim: bestCol / (std + 8) };
   }
 
-  return { score, canvas };
+  return { score };
 }

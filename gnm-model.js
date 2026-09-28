@@ -263,7 +263,6 @@ class GNMModel {
     this.K = K;
     this.n = numVertices;
     this.s = s;
-    this.triangles = s.triangles;
     // For display: head and neck, without the shoulders
     const low = (v) => s.template[v * 3 + 1] < NECK_CUT_Y;
     this.headTriangles = s.triangles.filter((_, i, tri) => {
@@ -433,26 +432,23 @@ class GNMModel {
   }
 
   /**
-   * Full measurement set (mm) plus line geometry (model coords, metres) for drawing
+   * Full measurement set (mm)
    * @param {Float64Array} V - mesh from mesh(c)
    * @param {number[][]} eyes - eyeJoints(c)
+   * @returns {{values: Object<string, number>}}
    */
   measure(V, eyes) {
     const P = (i) => [V[i * 3], V[i * 3 + 1], V[i * 3 + 2]];
     const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
     const mp = (i) => P(this.mpVertex.get(i));
-    const lines = {};
     const values = {};
 
     // Face
     values.ipd_far = dist(eyes[0], eyes[1]);
-    lines.ipd_far = [eyes[0], eyes[1]];
-    const pair = (key, a, b) => { values[key] = dist(mp(a), mp(b)); lines[key] = [mp(a), mp(b)]; };
-    pair("face_width", 127, 356);
+    values.face_width = dist(mp(127), mp(356));
     values.eye_width = (dist(mp(362), mp(263)) + dist(mp(33), mp(133))) / 2;
-    lines.eye_width = [mp(362), mp(263), null, mp(33), mp(133)];
-    pair("bridge_width", 190, 414);
-    pair("pad_width", 114, 343);
+    values.bridge_width = dist(mp(190), mp(414));
+    values.pad_width = dist(mp(114), mp(343));
     // Nose bridge (experiments/nose_check.py): sellion (168) in front of the inner eye
     // corners (133, 362), and its height relative to the eyeball centres
     const sellion = mp(168), canthi = [0, 1, 2].map((k) => (mp(133)[k] + mp(362)[k]) / 2);
@@ -461,67 +457,50 @@ class GNMModel {
 
     // Head circumference and length: tape band above the brows
     const y0 = mean(this.midBrow.map((i) => V[i * 3 + 1]));
-    let circ = 0, length = 0, ring = null, lengthLine = null;
+    let circ = 0, length = 0;
     for (let h = 0; h <= 0.0605; h += 0.003) {
       const pts = this.cut(V, 1, y0 + h);
       if (pts.length < 3) continue;
-      const hull = convexHull(pts.map((p) => [p[0], p[2]]));
-      const per = perimeter(hull);
-      if (per > circ) { circ = per; ring = hull.map(([x, z]) => [x, y0 + h, z]); }
+      circ = Math.max(circ, perimeter(convexHull(pts.map((p) => [p[0], p[2]]))));
       const zs = pts.map((p) => p[2]);
-      const zmin = Math.min(...zs), zmax = Math.max(...zs);
-      if (zmax - zmin > length) { length = zmax - zmin; lengthLine = [pts[zs.indexOf(zmax)], pts[zs.indexOf(zmin)]]; }
+      length = Math.max(length, Math.max(...zs) - Math.min(...zs));
     }
     values.circumference = circ;
-    lines.circumference = [...ring, ring[0]];
     values.length = length;
-    lines.length = lengthLine;
 
     // Breadth: widest point above the ears
-    let breadth = 0, breadthLine = null;
+    let breadth = 0;
     for (let h = -0.02; h <= 0.0805; h += 0.004) {
-      const pts = this.cut(V, 1, y0 + h);
-      if (!pts.length) continue;
-      const xs = pts.map((p) => p[0]);
-      const xmin = Math.min(...xs), xmax = Math.max(...xs);
-      if (xmax - xmin > breadth) { breadth = xmax - xmin; breadthLine = [pts[xs.indexOf(xmin)], pts[xs.indexOf(xmax)]]; }
+      const xs = this.cut(V, 1, y0 + h).map((p) => p[0]);
+      if (xs.length) breadth = Math.max(breadth, Math.max(...xs) - Math.min(...xs));
     }
     values.breadth = breadth;
-    lines.breadth = breadthLine;
 
     // Tragion and the ear-to-ear arc over the head
     const tl = this.tragion(V, this.earL), tr = this.tragion(V, this.earR);
     values.bitragion = dist(tl, tr);
-    lines.bitragion = [tl, tr];
     const zc = (tl[2] + tr[2]) / 2;
     const ylow = Math.min(tl[1], tr[1]);
     const arcPts = this.cut(V, 2, zc).filter((p) => p[1] > ylow).map((p) => [p[0], p[1]]);
     const arcHull = convexHull([...arcPts, [tl[0], tl[1]], [tr[0], tr[1]]]);
     values.ear_to_ear_arc = perimeter(arcHull) - Math.hypot(tl[0] - tr[0], tl[1] - tr[1]);
-    lines.ear_to_ear_arc = openArc(arcHull, [tl[0], tl[1]], [tr[0], tr[1]]).map(([x, y]) => [x, y, zc]);
 
     // Glasses: temple width, eye (corneal apex) to top of ear
-    const tlIdx = argmax(this.templeL, (i) => V[i * 3]);
-    const trIdx = argmax(this.templeR, (i) => -V[i * 3]);
-    values.temple_width = V[tlIdx * 3] - V[trIdx * 3];
-    lines.temple_width = [P(trIdx), P(tlIdx)];
+    values.temple_width = V[argmax(this.templeL, (i) => V[i * 3]) * 3] - V[argmax(this.templeR, (i) => -V[i * 3]) * 3];
     const [apexL, apexR] = this.s.eyeApex;
     const earTopL = P(argmax(this.earL, (i) => V[i * 3 + 1]));
     const earTopR = P(argmax(this.earR, (i) => V[i * 3 + 1]));
     values.eye_to_ear = (dist(P(apexL), earTopL) + dist(P(apexR), earTopR)) / 2;
-    lines.eye_to_ear = [P(apexL), earTopL, null, P(apexR), earTopR];
 
-    // Earbuds (coarse): ear length
+    // Earbuds (coarse, from face shape): ear length
     const span = (idx) => {
       const ys = idx.map((i) => V[i * 3 + 1]);
       return Math.max(...ys) - Math.min(...ys);
     };
     values.ear_length = (span(this.earL) + span(this.earR)) / 2;
-    const earLine = (idx) => [P(argmax(idx, (i) => V[i * 3 + 1])), P(argmax(idx, (i) => -V[i * 3 + 1]))];
-    lines.ear_length = [...earLine(this.earL), null, ...earLine(this.earR)];
 
     for (const k of Object.keys(values)) values[k] *= 1000;
-    return { values, lines };
+    return { values };
   }
 
   /** Front of the ear at mid-ear height (coarse tragion) */
@@ -572,19 +551,4 @@ function perimeter(hull) {
     sum += Math.hypot(a[0] - b[0], a[1] - b[1]);
   }
   return sum;
-}
-
-/** Hull polyline from a to b that avoids the chord a-b (the arc over the top) */
-function openArc(hull, a, b) {
-  const find = (p) => hull.findIndex((q) => q[0] === p[0] && q[1] === p[1]);
-  const ia = find(a), ib = find(b);
-  if (ia < 0 || ib < 0) return hull;
-  const walk = (from, to) => {
-    const out = [];
-    for (let i = from; ; i = (i + 1) % hull.length) { out.push(hull[i]); if (i === to) break; }
-    return out;
-  };
-  const one = walk(ia, ib), two = walk(ib, ia);
-  // The arc over the head is the side with the higher mean y
-  return mean(one.map((p) => p[1])) > mean(two.map((p) => p[1])) ? one : two;
 }

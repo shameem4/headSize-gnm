@@ -2,7 +2,11 @@
 
 **Question:** if we fit [GNM Head](https://github.com/google/GNM) (a statistical 3D model of the whole head, in real-world units) to the face landmarks the app already has, how well can we predict head dimensions the camera can't see? And what should set the mesh's real-world size: the iris, GNM's own sense of size, or both?
 
-**Short answer:** coarse sizing looks feasible for hats, glasses and headphones, and weak for earbuds. Combining the iris with GNM's own size estimate works best. These are simulation results (an upper bound); they still need checking against a few real people with a tape measure.
+**Short answer:**
+- **In simulation:** coarse sizing looks feasible for hats, glasses and headphones, but weak for earbuds predicted from the face. Combining the iris with GNM's own size estimate works best.
+- **On a real face:** GNM's own size estimate was off by about 5%, so the demo takes size from the iris (or a calibration) and only shape from GNM. See "First real-world observation".
+- **Ears** are now measured directly from side views; see "Ear measurement from side views".
+- **What's checked so far:** simulation results are an upper bound, and real checks so far cover one person.
 
 ## Method
 
@@ -108,6 +112,33 @@ Caveats:
 - With reference-cloud x/y, the turned views still pushed the head ~12 mm longer, most likely because MediaPipe places landmarks differently when the face is turned.
 - Both simulation assumptions (landmarks on vertices, the same at every angle) fail for real MediaPipe output, so the sweep was reverted.
 
+## Nose bridge (glasses fit)
+
+`nose_check.py` ([nose_results.txt](nose_results.txt)) asks whether the fitted head can tell a low nose bridge from a high one:
+- **Bridge projection:** how far the sellion (MediaPipe 168) sits in front of the inner eye corners.
+- **Bridge height:** how high the sellion sits relative to the pupils.
+
+| Scenario | Projection RMSE (mm) | Projection R² | Height RMSE (mm) | Height R² | Right third |
+|---|---|---|---|---|---|
+| A: iris scale | 0.9 | 0.95 | 0.5 | 0.90 | 84% |
+| D: MediaPipe captures 70% of shape | 1.5 | 0.86 | 0.8 | 0.78 | 78% |
+
+The population SDs are 4.1 mm (projection) and 1.7 mm (height). No simulated person was put in the wrong extreme third (low for high). The demo's low / medium / high category uses projection thirds of the GNM population (below 11.0 mm, above 14.6 mm). That's a population split, not an industry standard, and real nose depth hasn't been checked.
+
+## Ear measurement from side views
+
+The demo's "Measure ears" step runs [Ear_Landmarker](https://github.com/shameem4/Ear_Landmarker): 55 points in iBUG numbering, found on a crop around the head. Each point is projected onto the fitted head's ear plane.
+
+What real runs on one person taught (ruler: right ear ~68 mm long, >36 mm wide):
+- **Scale at the ear is right.** A printed marker held beside the ear measured 45.3 mm against its 45 mm, and its own distance matched the ear plane's to within about 2.5%.
+- **The lobe arc runs onto the cheek.** Its last points (17–19) follow the lobe up to where it joins the cheek, so length stops at point 16, the lobe's lowest point. Length is measured along the ear's principal axis, and width across it.
+- **Width depends on how squarely the ear is seen.** Frames seen more obliquely measure wider (up to 38 mm at ~27° off square), so only frames within 20° of square are used.
+- **Measure width the way the demo does,** or the numbers won't agree. The front edge is where the top of the ear joins the head (point 0), not the tragus. Measured that way the ruler gave >36 mm; from the tragus it gave 33.
+- **Results after each run's scale error:** length 66.6–70.5 mm, width 37.5–39.8 mm over the last three runs. The ± shown in the app is only the spread between frames within a run; run-to-run variation is larger, about ±2 mm.
+- **Label placement:**
+  - Point 0 sometimes lands on the face in front of the ear, which inflates width.
+  - Ear_Landmarker's own README labels the point groups differently from iBUG. The demo follows iBUG (see ears.js).
+
 ## Next steps
 
 1. **Real validation (essential):** 5–10 people, tape-measured circumference, head length/breadth and ear length, compared against the fit from a webcam session.
@@ -127,7 +158,7 @@ The demo therefore uses **iris scale only**: GNM gives shape, the iris gives siz
 
 ## Browser demo
 
-`gnm/` at the repo root is the demo built on this: MediaPipe tracks the face, GNM Head is fitted over 90 frames with the scale set by the iris, and every measurement is taken on the fitted head.
+The demo at the repo root is built on this: MediaPipe tracks the face, GNM Head is fitted over 90 frames with the scale set by the iris, and every measurement is taken on the fitted head.
 
 - `export_web.py` writes `gnm_head_fit.bin` (repo root) (4.3 MB). It holds 100 identity components (99.8% of shape variance; circumference RMSE 13.1 vs 12.9 mm with all 170). They're stored as int8, except at the 166 fitting points, which are float32: int8 there shifted the fitted scale by about 0.3%.
 - `make_web_test.py` + `test_web.mjs` check `gnm-model.js` against this Python code. Scale and identity match; measurements agree within 0.05 mm.
@@ -138,6 +169,9 @@ The demo therefore uses **iris scale only**: GNM gives shape, the iris gives siz
 python3 fetch_data.py      # downloads gnm_head.npz (53 MB) and builds corr.npz
 python3 prior.py           # prior spread of each measurement
 python3 experiment.py 400  # all scenarios, ~25 s on 32 cores
+python3 ear_check.py 400   # ear measures predicted from the face
+python3 nose_check.py 400  # nose bridge
+python3 multiview_check.py 200   # sweep vs single-pose fit (~3 min)
 python3 export_web.py      # browser model -> ../gnm_head_fit.bin
 python3 make_web_test.py && node test_web.mjs   # JS vs Python check
 ```

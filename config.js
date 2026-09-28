@@ -1,5 +1,5 @@
 /**
- * Centralized Configuration for headSize Application
+ * Configuration: camera, iris scale, landmark indices, display
  * @module config
  */
 
@@ -16,9 +16,11 @@ export const CAMERA_CONFIG = {
   runningMode: "VIDEO",
 
   // Video resolution
+  // Ask for 1080p: at 1 m a 720p webcam sees the iris only ~12 px wide (the browser
+  // falls back to what the camera supports)
   videoSize: {
-    width: 1280,
-    height: 720,
+    width: 1920,
+    height: 1080,
   },
 
   // Camera selection preferences
@@ -64,26 +66,6 @@ export const HEAD_CONFIG = {
     right: [469, 470, 471, 472],
   },
   pupil: { left: 473, right: 468 },
-
-  // Eye corners, ordered from the subject's right to left
-  eyeCorners: {
-    left: [362, 263],
-    right: [33, 133],
-  },
-
-  // Face edges [right, left]
-  faceWidth: [127, 356],
-
-  // Chin -> forehead, defines the face's vertical axis
-  faceUp: [152, 10],
-
-  // Nose rows, ordered across the nose
-  bridgeRow: [190, 189, 193, 168, 417, 413, 414],
-  padRow: [114, 188, 122, 6, 351, 412, 343],
-
-  // Angles as [vertex, armA, armB]
-  padAngle: [8, 412, 6],
-  flareAngle: [6, 122, 351],
 };
 
 /** Display */

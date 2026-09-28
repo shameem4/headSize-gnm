@@ -54,40 +54,6 @@ body {
 }
 
 /* --- Radio focus control --- */
-.control-group {
-  border: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: .8rem;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  opacity: .9;
-}
-
-.control-group legend {
-  margin-bottom: 4px;
-  font-weight: 500;
-}
-
-.radio-options {
-  display: flex;
-  gap: 3px;
-}
-
-.radio-options label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-}
-
-.radio-options input[type="radio"] {
-  accent-color: #00ffc8;
-}
-
 /* --- Metric cards --- */
 .panel-body {
   display: grid;
@@ -155,32 +121,13 @@ body {
 }
 
 /* Constrain media to the container (not viewport) */
-#webcam,
-#output_canvas {
+#webcam {
   max-width: 100%;
   max-height: 100%;
   border-radius: 24px;
   overflow: hidden;
 }
 
-/* Canvas should overlay the video perfectly */
-#output_canvas,
-#output_canvas_3d {
-  position: absolute;
-  left: 0;
-  top: 0;
-}
-
-/* 3D canvas specific styles - no interaction, just overlay */
-#output_canvas_3d {
-  pointer-events: none; /* Allow clicks to pass through to video */
-}
-
-input[type="range"] {
-  width: 100%;
-  accent-color: #00ffc8;
-  cursor: pointer;
-}
 /* Narrow screens: stack video above the panel and let the page scroll */
 @media (max-width: 1000px) {
   body {

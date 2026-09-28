@@ -62,6 +62,8 @@ const MESSAGES = {
   still: "Keep still…",
   measuring: "Keep still while measuring…",
   lost: "Face not found: fit your head in the frame, 0.5 to 1 m away",
+  snapshotFailed: "Could not save the snapshot",
+  snapshotCalibrating: "Finish or cancel calibrating before saving a snapshot",
   earsFirst: "Measure your head first, then your ears",
   earsLoading: "Loading the ear detector…",
   earsLoadFailed: "Could not load the ear detector. Check your connection, then try again.",
@@ -154,15 +156,14 @@ const fitStatus = document.getElementById("fit_status");
 const progressBar = document.getElementById("progress_bar");
 const panelBody = document.getElementById("metrics_panel_body");
 
-// Raw MediaPipe depth (depthScale 1), not the corrected depth the face demo uses: the fit
+// Raw MediaPipe depth (depthScale 1), not the corrected 0.5 used for the calibration geometry: the fit
 // compares against a reference cloud built from raw MediaPipe landmarks, and subtracting
 // it is what cancels MediaPipe's too-deep faces. Halving depth here breaks that match
 // (head length came out ~30% short).
 let irisMm = loadIris();
 let measurer = makeMeasurer();
-// Ask for 1080p: at 1 m a 720p webcam sees the iris only ~12 px wide (the browser falls
-// back to what the camera supports). Landmarks stay unmirrored; CSS mirrors the display.
-const camera = new CameraManager(video, { ...CAMERA_CONFIG, videoSize: { width: 1920, height: 1080 } });
+// Landmarks stay unmirrored; CSS mirrors the display.
+const camera = new CameraManager(video, CAMERA_CONFIG);
 const view = createView(canvas);
 const guide = createGuide(guideCanvas, {
   focalNorm: CAMERA_CONFIG.focalLengthNorm,
@@ -186,7 +187,13 @@ const calibration = createCardCalibration(
       applyCalibration(iris);
     },
     onRetake: startCalibration,
-    onCancel: resetCapture,
+    // Cancelling keeps a finished measurement
+    onCancel: () => {
+      if (!fitResult) return resetCapture();
+      phase = "done";
+      showMessage(null);
+      setProgress(1, MESSAGES.done);
+    },
   }
 );
 
@@ -211,11 +218,12 @@ let calibrationRecord = null;  // { image, irisMm, kind, time } from this sessio
 let calibrationFrames = [];
 let markerFinder = null;
 let markerQuad = null; // last detected marker corners (normalized), for drawing
-let lowerFrames = 0;      // frames without the marker since calibration (phase "lower")
-let fitVertices = null;   // fitted head, observation units (for the ear planes)
+let lowerFrames = 0;
+let markerWarnUntil = 0;  // hold a marker calibration warning on screen until then      // frames without the marker since calibration (phase "lower")
+let fitVertices = null;   // fitted head, observation units
+let earPlanes = null;     // ear planes of the fitted head (model frame), for the ear step
 let earPipeline = null;
 let ears = null;          // { left: [], right: [], busy, points } during/after "ears"
-const earCrop = document.createElement("canvas");
 
 /** Calibrated iris diameter from this browser, or null */
 function loadIris() {
@@ -252,6 +260,9 @@ function resetCapture() {
   capture = { reference: null, sum: null, count: 0, ipdSum: 0 };
   fitResult = null;
   fitRecord = null;
+  fitVertices = null;
+  earPlanes = null;
+  lastValues = null;
   ears = null;
   phase = "align";
   glassesScores = [];
@@ -314,6 +325,7 @@ function lowerStep(landmarks, m) {
 }
 
 function markerStep(landmarks, m, still) {
+  if (performance.now() < markerWarnUntil) return;   // let the last warning be read
   const W = video.videoWidth, H = video.videoHeight;
   const { found, zEyes, zForehead } = findMarker(landmarks, m);
   markerQuad = found ? found.corners.map((p) => ({ x: p.x / W, y: p.y / H })) : null;
@@ -353,6 +365,7 @@ function markerStep(landmarks, m, still) {
         "Check the marker was printed at 100% (\"Actual size\"), then try again.",
       { warn: true }
     );
+    markerWarnUntil = performance.now() + 5000;
     return;
   }
   calibrationRecord = captionedCopy(markerFrame, `Printed marker calibration: iris ${iris.toFixed(2)} mm`, iris, "marker");
@@ -452,6 +465,7 @@ function refit() {
 
   // Draw in observation units so the head lines up with the video
   fitVertices = vertices.map((v) => v * scale);
+  earPlanes = null;
   view.setHead(fitVertices, gnm.headTriangles);
   fitResult = { c, scale };
   fitCaptureRequested = true;   // grabbed after this frame is rendered, with the head
@@ -464,7 +478,8 @@ function refit() {
 // ============================================================================
 
 async function startEars() {
-  if (!fitResult) return showMessage(MESSAGES.earsFirst, { warn: true });
+  if (phase === "ears") return;                        // already running
+  if (!fitResult || phase !== "done") return showMessage(MESSAGES.earsFirst, { warn: true });
   showMessage(MESSAGES.earsLoading);
   try {
     earPipeline ??= await loadEarPipeline();
@@ -479,6 +494,8 @@ async function startEars() {
   } catch (error) {
     console.warn("Marker check unavailable", error);
   }
+  // The models can take seconds to load: the head may have been re-measured meanwhile
+  if (!fitResult || phase !== "done") return;
   ears = { left: [], right: [], busy: false, points: null };
   // Sound needs a user gesture to start: this click
   try {
@@ -556,13 +573,13 @@ function earStep(landmarks, pose, still) {
   const facing = rotate([0, 0, 1]);
   const turn = Math.abs((Math.atan2(facing[0], facing[2]) * 180) / Math.PI);
 
-  const planes = ["left", "right"].map((side) => {
+  earPlanes ??= ["left", "right"].map((side) => {
     const plane = planeFit(fitVertices, side === "left" ? gnm.earL : gnm.earR);
-    let normal = plane.normal;
     // Point the normal away from the head, so the nearer ear is the one facing the camera
-    if (normal[0] * (side === "left" ? 1 : -1) < 0) normal = normal.map((v) => -v);
-    return { side, centroid: toCamera(plane.centroid), normal: rotate(normal) };
+    const normal = plane.normal[0] * (side === "left" ? 1 : -1) < 0 ? plane.normal.map((v) => -v) : plane.normal;
+    return { side, centroid: plane.centroid, normal };
   });
+  const planes = earPlanes.map(({ side, centroid, normal }) => ({ side, centroid: toCamera(centroid), normal: rotate(normal) }));
   const plane = planes[0].centroid[2] > planes[1].centroid[2] ? planes[0] : planes[1];
   const other = plane.side === "left" ? "right" : "left";
   const done = (side) => ears[side].length >= EAR_FRAMES;
@@ -591,9 +608,10 @@ function earStep(landmarks, pose, still) {
     console.error(error);   // the check is optional: carry on without it
   }
   markerQuad = marker ? marker.corners.map((p) => ({ x: p.x / W, y: p.y / H })) : null;
-  detectEars(earPipeline, video, landmarks, earCrop)
-    .then((found) => {
-      if (phase !== "ears") return;
+  const session = ears;
+  detectEars(earPipeline, video, landmarks)
+    .then(({ ears: found, crop }) => {
+      if (phase !== "ears" || ears !== session) return;   // reset or restarted meanwhile
       // The detection nearest the fitted head's ear
       const expected = projectPoint(plane.centroid, W, H, focalPx);
       const near = (e) => Math.hypot((e.bbox.xmin + e.bbox.xmax) / 2 - expected.x, (e.bbox.ymin + e.bbox.ymax) / 2 - expected.y);
@@ -622,7 +640,7 @@ function earStep(landmarks, pose, still) {
       }
       // Crop of the ear as measured (the ear record is saved from these, since by the time
       // anyone clicks "Save snapshot" they are facing the screen again)
-      frame.image = earImage(ear.bbox);
+      frame.image = earImage(ear.bbox, crop);
       ears[plane.side].push(frame);
       showMessage(MESSAGES.earsFound);
       // Tick per frame (higher when the marker was seen too); a chime when a side is done
@@ -632,17 +650,18 @@ function earStep(landmarks, pose, still) {
       if (done("left") && done("right")) finishEars();
     })
     .catch((error) => console.error(error))
-    .finally(() => (ears && (ears.busy = false)));
+    .finally(() => (session.busy = false));
 }
 
-/** JPEG crop around an ear box, with its position in the frame */
-function earImage(bbox) {
+/** JPEG crop around an ear box, with its position in the frame, cut from the frame the
+ * ear was found in (crop: that frame's search square and its position) */
+function earImage(bbox, crop) {
   const side = Math.round(1.6 * Math.max(bbox.xmax - bbox.xmin, bbox.ymax - bbox.ymin));
   const x = Math.round((bbox.xmin + bbox.xmax) / 2 - side / 2);
   const y = Math.round((bbox.ymin + bbox.ymax) / 2 - side / 2);
   const c = document.createElement("canvas");
   c.width = c.height = side;
-  c.getContext("2d").drawImage(video, x, y, side, side, 0, 0, side, side);
+  c.getContext("2d").drawImage(crop.canvas, x - crop.x, y - crop.y, side, side, 0, 0, side, side);
   return { x, y, side, jpeg: c.toDataURL("image/jpeg", 0.9) };
 }
 
@@ -902,6 +921,9 @@ function saveSnapshot() {
       console.warn("Zip unavailable, saving separate files", error);
       for (const [file, blob] of Object.entries(files)) download(blob, file);
     }
+  }).catch((error) => {
+    console.error(error);
+    showMessage(MESSAGES.snapshotFailed, { warn: true });
   });
 }
 
@@ -977,7 +999,13 @@ function resizeDisplay() {
 function setupControls() {
   document.getElementById("mesh_toggle").addEventListener("change", (e) => view.setMeshVisible(e.target.checked));
   document.getElementById("remeasure").addEventListener("click", resetCapture);
-  document.getElementById("snapshot").addEventListener("click", () => (snapshotRequested = true));
+  document.getElementById("snapshot").addEventListener("click", () => {
+    // The live view may show a card or marker: finish or cancel calibrating first
+    if (["calibrate", "mark", "marker", "lower"].includes(phase)) {
+      return showMessage(MESSAGES.snapshotCalibrating, { warn: true });
+    }
+    snapshotRequested = true;
+  });
   document.getElementById("calibrate_card").addEventListener("click", startCalibration);
   document.getElementById("calibrate_marker").addEventListener("click", startMarkerCalibration);
   document.getElementById("measure_ears").addEventListener("click", startEars);
@@ -1001,11 +1029,22 @@ function setupControls() {
 // LOOP
 // ============================================================================
 
+/** Frame loop: one exception must not stop the app */
 function renderFrame() {
+  try {
+    frame();
+  } catch (error) {
+    console.error(error);
+  } finally {
+    window.requestAnimationFrame(renderFrame);
+  }
+}
+
+function frame() {
   const { faceResults } = models.processFrame(video);
   const landmarks = faceResults?.faceLandmarks?.[0] || null;
   const videoSize = { width: video.videoWidth, height: video.videoHeight };
-  const m = measurer.update(landmarks, videoSize, videoSize);
+  const m = measurer.update(landmarks, videoSize);
   frameNumber++;
 
   let aligned = false;
@@ -1091,7 +1130,6 @@ function renderFrame() {
     snapshotRequested = false;
     saveSnapshot();
   }
-  window.requestAnimationFrame(renderFrame);
 }
 
 function cameraErrorMessage(error) {
