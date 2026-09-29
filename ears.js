@@ -20,11 +20,9 @@ const ANTITRAGUS = 40;
 // Search a square around the face (this x face height): the ear finder shrinks its
 // input to 128 px, and a whole 1080p frame would leave an ear ~15 px tall
 const HEAD_CROP = 2.2;
-// Grey margin around the crop (fraction of its side), and the grey Ear_Landmarker was
-// trained with (data/dataset.py pads with 128): the pipeline cuts a 1.3x square around
-// each ear and clamps it at the image edge, so without room around the ear a crop near
-// the edge comes out clipped and gets stretched to 192x192
-const CROP_MARGIN = 0.15;
+// Parts of the crop outside the video are filled with the grey Ear_Landmarker was
+// trained with (data/dataset.py pads with 128). The pipeline pads its own ear ROI the
+// same way, so the crop needs no extra margin.
 const PAD_GREY = "rgb(128, 128, 128)";
 // The crop only moves when the face centre drifts more than this fraction of its side:
 // a steady crop keeps the landmark tracker's coordinates consistent between frames
@@ -84,10 +82,8 @@ export async function detectEars(pipeline, video, faceLandmarks, steady = null) 
     steady = { side, cx: wantX, cy: wantY };
     pipeline.resetSmoothing?.();
   }
-  // Canvas = the crop plus a grey margin; its origin sits at (cx, cy) in the frame
-  const margin = Math.round(CROP_MARGIN * side);
-  const cx = steady.cx - margin, cy = steady.cy - margin;
-  const size = side + 2 * margin;
+  const { cx, cy } = steady;
+  const size = side;
   const crop = document.createElement("canvas");
   crop.width = crop.height = size;
   const ctx = crop.getContext("2d");

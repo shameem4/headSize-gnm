@@ -137,7 +137,10 @@ What real runs on one person taught (ruler: right ear ~68 mm long, >36 mm wide):
 - **Results after each run's scale error:** length 66.6–70.5 mm, width 37.5–39.8 mm over the last three runs. The ± shown in the app is only the spread between frames within a run; run-to-run variation is larger, about ±2 mm.
 - **Label placement:**
   - Point 0 sometimes lands on the face in front of the ear, which inflates width.
-  - Ear_Landmarker's own README labels the point groups differently from iBUG. The demo follows iBUG (see ears.js).
+  - Early Ear_Landmarker releases labelled the point groups differently from iBUG; current releases use the iBUG names, as the demo does (see ears.js).
+  - Ear_Landmarker's `measure.py` defines concha and tragus-to-antitragus differently from the demo:
+    - **Concha:** it uses points 43–46 only; the demo spans the bowl opening from the tragus (35–46).
+    - **Tragus to antitragus:** it takes the maximum separation between the two structures; the demo measures the notch, points 38 to 40.
 
 ## Next steps
 
