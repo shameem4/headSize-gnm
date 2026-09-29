@@ -496,7 +496,8 @@ async function startEars() {
   }
   // The models can take seconds to load: the head may have been re-measured meanwhile
   if (!fitResult || phase !== "done") return;
-  ears = { left: [], right: [], busy: false, points: null };
+  // crop: steady search square for this session (see detectEars)
+  ears = { left: [], right: [], busy: false, points: null, crop: null };
   // Sound needs a user gesture to start: this click
   try {
     audio ??= new AudioContext();
@@ -609,9 +610,10 @@ function earStep(landmarks, pose, still) {
   }
   markerQuad = marker ? marker.corners.map((p) => ({ x: p.x / W, y: p.y / H })) : null;
   const session = ears;
-  detectEars(earPipeline, video, landmarks)
-    .then(({ ears: found, crop }) => {
+  detectEars(earPipeline, video, landmarks, session.crop)
+    .then(({ ears: found, crop, steady }) => {
       if (phase !== "ears" || ears !== session) return;   // reset or restarted meanwhile
+      session.crop = steady;
       // The detection nearest the fitted head's ear
       const expected = projectPoint(plane.centroid, W, H, focalPx);
       const near = (e) => Math.hypot((e.bbox.xmin + e.bbox.xmax) / 2 - expected.x, (e.bbox.ymin + e.bbox.ymax) / 2 - expected.y);

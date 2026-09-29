@@ -20,6 +20,15 @@ const ANTITRAGUS = 40;
 // Search a square around the face (this x face height): the ear finder shrinks its
 // input to 128 px, and a whole 1080p frame would leave an ear ~15 px tall
 const HEAD_CROP = 2.2;
+// Grey margin around the crop (fraction of its side), and the grey Ear_Landmarker was
+// trained with (data/dataset.py pads with 128): the pipeline cuts a 1.3x square around
+// each ear and clamps it at the image edge, so without room around the ear a crop near
+// the edge comes out clipped and gets stretched to 192x192
+const CROP_MARGIN = 0.15;
+const PAD_GREY = "rgb(128, 128, 128)";
+// The crop only moves when the face centre drifts more than this fraction of its side:
+// a steady crop keeps the landmark tracker's coordinates consistent between frames
+const CROP_DEADBAND = 0.1;
 
 export const EAR_LINES = [
   [0, 20],   // helix and lobe
@@ -42,6 +51,8 @@ export function loadEarPipeline() {
   })
     .then(() => import("./ear/earlandmarker_inference.js"))
     .then(async ({ EarLandmarkerPipeline }) => {
+      // Temporal smoothing on (the library's One Euro tracker): detectEars keeps the crop
+      // steady so the tracker sees consistent coordinates
       const pipeline = new EarLandmarkerPipeline({ confidenceThreshold: 0.5 });
       await pipeline.load("ear/BlazeEar_web.onnx", "ear/EarLandmarker_web.onnx");
       return pipeline;
@@ -51,22 +62,38 @@ export function loadEarPipeline() {
 
 /**
  * Find ears in a head-sized crop around the face (a fresh canvas per call, so overlapping
- * calls can't share pixels)
- * @returns {Promise<{ears: Array<{bbox, confidence, landmarks}>, crop: {canvas, x, y}}>}
+ * calls can't share pixels). The crop is held steady: its size is fixed per ear session
+ * and it only moves when the face drifts past CROP_DEADBAND, and then the pipeline's
+ * smoothing restarts, so the tracker never smooths across a jump.
+ * @param {{side: number, cx: number, cy: number}|null} steady - crop state for this ear
+ *   session (updated in place); null on the first call
+ * @returns {Promise<{ears: Array<{bbox, confidence, landmarks}>, crop: {canvas, x, y}, steady}>}
  *   ears in video pixels; crop: the searched square and its position in the frame
  */
-export async function detectEars(pipeline, video, faceLandmarks) {
+export async function detectEars(pipeline, video, faceLandmarks, steady = null) {
   const W = video.videoWidth, H = video.videoHeight;
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
   for (const p of faceLandmarks) {
     x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y);
   }
-  const side = Math.min(W, H, Math.round(HEAD_CROP * (y1 - y0) * H));
-  const cx = Math.round(Math.max(0, Math.min(W - side, ((x0 + x1) / 2) * W - side / 2)));
-  const cy = Math.round(Math.max(0, Math.min(H - side, ((y0 + y1) / 2) * H - side / 2)));
+  const side = steady?.side ?? Math.round(HEAD_CROP * (y1 - y0) * H);
+  // Not clamped to the frame: parts outside the video are padded grey like the margin
+  const wantX = Math.round(((x0 + x1) / 2) * W - side / 2);
+  const wantY = Math.round(((y0 + y1) / 2) * H - side / 2);
+  if (!steady || Math.hypot(wantX - steady.cx, wantY - steady.cy) > CROP_DEADBAND * side) {
+    steady = { side, cx: wantX, cy: wantY };
+    pipeline.resetSmoothing?.();
+  }
+  // Canvas = the crop plus a grey margin; its origin sits at (cx, cy) in the frame
+  const margin = Math.round(CROP_MARGIN * side);
+  const cx = steady.cx - margin, cy = steady.cy - margin;
+  const size = side + 2 * margin;
   const crop = document.createElement("canvas");
-  crop.width = crop.height = side;
-  crop.getContext("2d").drawImage(video, cx, cy, side, side, 0, 0, side, side);
+  crop.width = crop.height = size;
+  const ctx = crop.getContext("2d");
+  ctx.fillStyle = PAD_GREY;
+  ctx.fillRect(0, 0, size, size);
+  ctx.drawImage(video, -cx, -cy);
   const results = await pipeline.detect(crop);
   return {
     ears: results.map((r) => ({
@@ -75,6 +102,7 @@ export async function detectEars(pipeline, video, faceLandmarks) {
       landmarks: r.landmarks.map((p) => ({ x: p.x + cx, y: p.y + cy })),
     })),
     crop: { canvas: crop, x: cx, y: cy },
+    steady,
   };
 }
 
