@@ -138,7 +138,7 @@ view3d.js                        Three.js wireframe head over the video
 guide.js, glasses.js             Capture guide, glasses detection
 calibrate.js                     Card calibration: automatic edge finding, pixelation
 marker.js, marker.html           Printed ArUco marker calibration
-ears.js, ear/                    Ear measurement; Ear_Landmarker models (ONNX) and inference
+ears.js, ear/                    Ear measurement; Ear_Landmarker models (BlazeFace, BlazeEar, landmarks; ONNX) and inference
 snapshot.js                      Snapshot images and zip
 experiments/                     Simulations, real-data findings and the web export (Python)
 ```
@@ -149,7 +149,7 @@ This project is licensed under [CC BY-NC 4.0](LICENSE) (non-commercial). It incl
 
 - **[GNM Head](https://github.com/google/GNM)** (Google, Apache-2.0). `gnm_head_fit.bin` is a trimmed export of it. See [LICENSE-APACHE-2.0.txt](LICENSE-APACHE-2.0.txt).
 - **MediaPipe↔GNM correspondence** from [XR Blocks](https://github.com/google/xrblocks) (Google, Apache-2.0), derived from [gnm-webcam-puppet](https://github.com/edualvarado/gnm-webcam-puppet).
-- **[Ear_Landmarker](https://github.com/shameem4/Ear_Landmarker)** (BlazeEar + 55-point model). Trained on iBUG ears and AudioEar data, which are for non-commercial research only.
+- **[Ear_Landmarker](https://github.com/shameem4/Ear_Landmarker)** (BlazeFace face detector from MediaPipe, Apache-2.0; BlazeEar ear detector; 55-point landmark model). The ear models are trained on iBUG ears and AudioEar data, which are for non-commercial research only.
 - **Loaded from CDNs:**
   - [MediaPipe Tasks Vision](https://github.com/google-ai-edge/mediapipe) (Apache-2.0)
   - [three.js](https://threejs.org) (MIT)

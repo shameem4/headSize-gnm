@@ -8,13 +8,21 @@
  *   import { EarLandmarkerPipeline } from './earlandmarker_inference.js';
  *
  *   const pipeline = new EarLandmarkerPipeline();
- *   await pipeline.load('BlazeEar_web.onnx', 'EarLandmarker_web.onnx');
+ *   await pipeline.load('BlazeFace_web.onnx', 'BlazeEar_web.onnx',
+ *                        'EarLandmarker_web.onnx');
  *
  *   const results = await pipeline.detect(videoElement);
  *   // Returns: Array of { bbox, confidence, landmarks }
  */
 
 import { EarTracker } from './smoothing.js';
+// BlazeEar's own browser pipeline, copied verbatim from that repo's docs/.
+// Detection is delegated to it rather than reimplemented here: v2 made the
+// detector two-stage (BlazeFace on the frame, the ear model on a face crop)
+// and changed the ONNX contract from 896 raw anchors to already-decoded,
+// already-suppressed boxes. The decoder this file used to carry read a fixed
+// 896 rows and would silently misread the new graph.
+import { createTwoStageDetector } from './blazeear_inference.js';
 
 const ort = (typeof window !== 'undefined' && window.ort) ||
             (typeof globalThis !== 'undefined' && globalThis.ort) ||
@@ -48,6 +56,15 @@ const ROI_OCC_TOL = 0.06;       // skip refinement when occupancy is already thi
 const ROI_SATURATED = 0.88;     // above this the ear is clipped, so extent under-reads
 const ROI_SAT_BOOST = 1.25;     // ...so grow faster than the measurement implies
 const ROI_MAX_REFINE = 1;       // refinement passes; 1 lands within 1% of the fixed point
+// Hard bounds on the expansion, as a multiple of the detector box extent.
+// Without these the refinement is a positive feedback loop: a landmarker that
+// reports a saturated extent (motion blur, an occluded ear, a false-positive
+// box) grows the crop, the grown value is cached, and the next frame seeds from
+// it -- ~1.53x per frame, 38x within eight frames, with no recovery. The upper
+// bound also keeps the crop inside the band where over-wide framing is cheap:
+// drift is ~0 at 1.7x but 17.7% by 2.5x.
+const ROI_EXPAND_MIN = 1.0;
+const ROI_EXPAND_MAX = 2.5;
 
 /** Next ROI side so the ear lands at the training occupancy. */
 function refineRoiSide(side, extent) {
@@ -83,7 +100,7 @@ class EarLandmarkerPipeline {
         this.maxAspectRatio = options.maxAspectRatio ?? 1.4;
         this.minSizeFrac = options.minSizeFrac ?? 0.03;
         this.maxSizeFrac = options.maxSizeFrac ?? 0.55;
-        this.detectorSession = null;
+        this.detector = null;
         this.landmarkerSession = null;
         this.isLoaded = false;
         // Temporal smoothing. Box wobble is ~90% of frame-to-frame jitter, so
@@ -94,17 +111,43 @@ class EarLandmarkerPipeline {
             : null;
     }
 
-    /** Clear smoothing state, e.g. when switching between webcam and an image. */
-    resetSmoothing() { if (this.tracker) this.tracker.reset(); }
+    /**
+     * Clear smoothing and ROI state, e.g. when switching webcam -> image.
+     * Clearing _roiExpand is required, not tidiness: EarTracker.reset()
+     * restarts track ids at 0, so a cached expansion keyed by id would be
+     * inherited by an unrelated ear in the next source.
+     */
+    resetSmoothing() {
+        if (this.tracker) this.tracker.reset();
+        this._roiExpand.clear();
+        if (this.detector) this.detector.ear._nmsState = undefined;
+    }
+
+    /** Alias, since "reset" is what the docs and most callers reach for. */
+    reset() { this.resetSmoothing(); }
 
     /**
-     * Load both ONNX models
-     * @param {string} detectorPath - Path to BlazeEar_web.onnx
+     * Load the three ONNX models.
+     *
+     * Detection is two-stage as of BlazeEar v2, so it takes a face graph as
+     * well: BlazeFace locates the head, the ear model runs on a square crop
+     * around it. On 500 annotated full scenes that lifts ear recall at
+     * IoU>=0.3 from 47.6% to 78.6%, because a full frame squeezed into 128x128
+     * leaves the median ear about 14 pixels across, and cropping first makes
+     * it 32.
+     *
+     * @param {string} facePath - Path to BlazeFace_web.onnx
+     * @param {string} detectorPath - Path to BlazeEar_web.onnx (crop-trained)
      * @param {string} landmarkerPath - Path to EarLandmarker_web.onnx
      */
-    async load(detectorPath, landmarkerPath, sessionOptions = {}) {
+    async load(facePath, detectorPath, landmarkerPath, sessionOptions = {}) {
         if (!ort) {
             throw new Error('ONNX Runtime Web not found. Include ort.min.js.');
+        }
+        if (landmarkerPath === undefined) {
+            throw new Error(
+                'load() now takes (facePath, detectorPath, landmarkerPath): ' +
+                'BlazeEar v2 is two-stage and needs BlazeFace_web.onnx too.');
         }
 
         const defaultOptions = {
@@ -113,15 +156,15 @@ class EarLandmarkerPipeline {
         };
         const opts = { ...defaultOptions, ...sessionOptions };
 
-        [this.detectorSession, this.landmarkerSession] = await Promise.all([
-            ort.InferenceSession.create(detectorPath, opts),
+        [this.detector, this.landmarkerSession] = await Promise.all([
+            createTwoStageDetector(facePath, detectorPath, {
+                confidenceThreshold: this.confidenceThreshold,
+                iouThreshold: this.iouThreshold,
+            }, opts),
             ort.InferenceSession.create(landmarkerPath, opts),
         ]);
 
         this.isLoaded = true;
-        console.log('EarLandmarker pipeline loaded');
-        console.log('Detector outputs:', this.detectorSession.outputNames);
-        console.log('Landmarker outputs:', this.landmarkerSession.outputNames);
     }
 
     /**
@@ -152,6 +195,7 @@ class EarLandmarkerPipeline {
 
         // Stage 2: For each detection, crop and run landmarker
         const results = [];
+        const liveTracks = new Set();
         for (let di = 0; di < detections.length; di++) {
             const det = detections[di];
             // Expand bbox for context
@@ -162,8 +206,8 @@ class EarLandmarkerPipeline {
             // Seed from what this track needed last frame, so video settles to
             // one pass instead of paying for refinement on every frame.
             const tid = trackIds ? trackIds[di] : undefined;
-            let side = Math.max(bw, bh) *
-                (this._roiExpand.get(tid) ?? ROI_EXPAND);
+            let side = Math.max(bw, bh) * Math.min(Math.max(
+                this._roiExpand.get(tid) ?? ROI_EXPAND, ROI_EXPAND_MIN), ROI_EXPAND_MAX);
             let roiX = cx, roiY = cy;
             let frameLandmarks = null, pointConfidence = null;
 
@@ -211,7 +255,10 @@ class EarLandmarkerPipeline {
                 const extent = Math.max(exX, exY);
                 if (Math.abs(extent / n - TRAIN_OCCUPANCY) <= ROI_OCC_TOL) break;
 
-                side = refineRoiSide(n, extent);
+                const boxExtent = Math.max(bw, bh);
+                side = Math.min(Math.max(refineRoiSide(n, extent),
+                                         boxExtent * ROI_EXPAND_MIN),
+                                boxExtent * ROI_EXPAND_MAX);
                 roiX = (Math.min(...xs) + Math.max(...xs)) / 2;
                 roiY = (Math.min(...ys) + Math.max(...ys)) / 2;
             }
@@ -219,6 +266,7 @@ class EarLandmarkerPipeline {
             if (!frameLandmarks) continue;
             if (tid !== undefined && Math.max(bw, bh) > 0) {
                 this._roiExpand.set(tid, side / Math.max(bw, bh));
+                liveTracks.add(tid);
             }
 
             // Smooth in frame coords, so the filter sees real motion rather
@@ -236,6 +284,14 @@ class EarLandmarkerPipeline {
             });
         }
 
+        // Track ids increment forever, so without this the cache grows for the
+        // life of the page on any stream where ears come and go.
+        if (trackIds) {
+            for (const tid of [...this._roiExpand.keys()]) {
+                if (!liveTracks.has(tid)) this._roiExpand.delete(tid);
+            }
+        }
+
         return results;
     }
 
@@ -243,74 +299,26 @@ class EarLandmarkerPipeline {
      * Run BlazeEar detector
      * @private
      */
-    async _runDetector(canvas, width, height) {
-        // Preprocess: resize to 256 with padding, then to 128
-        const maxDim = Math.max(height, width);
-        const scale = maxDim / 256.0;
-        const newH = Math.round(height / scale);
-        const newW = Math.round(width / scale);
-        const padH1 = Math.floor((256 - newH) / 2);
-        const padW1 = Math.floor((256 - newW) / 2);
-        const padY = padH1 * scale;
-        const padX = padW1 * scale;
+    /**
+     * Stage 1: ears in frame coordinates, via BlazeEar's two-stage detector.
+     *
+     * Preprocessing, anchor decoding and cross-crop NMS all live in
+     * blazeear_inference.js, which is that repo's shipped implementation. The
+     * geometry filter and the IoMin pass below are this pipeline's own: the
+     * former rejects boxes that cannot be ears, the latter collapses a box
+     * nested inside another on the SAME ear, which plain IoU cannot catch and
+     * which produced doubled landmark sets in the live demo.
+     */
+    async _runDetector(source, width, height) {
+        const raw = await this.detector.detect(source);
 
-        const canvas256 = document.createElement('canvas');
-        canvas256.width = 256;
-        canvas256.height = 256;
-        const ctx256 = canvas256.getContext('2d');
-        ctx256.fillStyle = 'black';
-        ctx256.fillRect(0, 0, 256, 256);
-        ctx256.drawImage(canvas, padW1, padH1, newW, newH);
-
-        const canvas128 = document.createElement('canvas');
-        canvas128.width = 128;
-        canvas128.height = 128;
-        canvas128.getContext('2d').drawImage(canvas256, 0, 0, 128, 128);
-
-        const imgData = canvas128.getContext('2d').getImageData(0, 0, 128, 128);
-        const pixels = imgData.data;
-        const tensorData = new Float32Array(3 * 128 * 128);
-        for (let i = 0; i < 128 * 128; i++) {
-            tensorData[i] = pixels[i * 4];                         // R
-            tensorData[128 * 128 + i] = pixels[i * 4 + 1];        // G
-            tensorData[2 * 128 * 128 + i] = pixels[i * 4 + 2];    // B
-        }
-
-        const feeds = {
-            'image': new ort.Tensor('float32', tensorData, [1, 3, 128, 128]),
-            'scale': new ort.Tensor('float32', [scale], []),
-            'pad_y': new ort.Tensor('float32', [padY], []),
-            'pad_x': new ort.Tensor('float32', [padX], []),
-        };
-
-        const results = await this.detectorSession.run(feeds);
-        const boxes = results.boxes.data;
-        const scores = results.scores.data;
-
-        // Filter by confidence and apply NMS
-        const candidates = [];
-        for (let i = 0; i < 896; i++) {
-            if (scores[i] >= this.confidenceThreshold) {
-                candidates.push({
-                    ymin: boxes[i * 4], xmin: boxes[i * 4 + 1],
-                    ymax: boxes[i * 4 + 2], xmax: boxes[i * 4 + 3],
-                    confidence: scores[i],
-                });
-            }
-        }
-        candidates.sort((a, b) => b.confidence - a.confidence);
-
-        const nmsed = this._nms(candidates);
-
-        // Clamp and filter geometry
-        for (const det of nmsed) {
-            det.ymin = Math.max(0, Math.min(det.ymin, height));
-            det.xmin = Math.max(0, Math.min(det.xmin, width));
-            det.ymax = Math.max(0, Math.min(det.ymax, height));
-            det.xmax = Math.max(0, Math.min(det.xmax, width));
-        }
-
-        return nmsed.filter(det => {
+        const dets = raw.map(d => ({
+            ymin: Math.max(0, Math.min(d.ymin, height)),
+            xmin: Math.max(0, Math.min(d.xmin, width)),
+            ymax: Math.max(0, Math.min(d.ymax, height)),
+            xmax: Math.max(0, Math.min(d.xmax, width)),
+            confidence: d.confidence,
+        })).filter(det => {
             const w = det.xmax - det.xmin;
             const h = det.ymax - det.ymin;
             if (h < 1) return false;
@@ -319,6 +327,9 @@ class EarLandmarkerPipeline {
             return aspect >= this.minAspectRatio && aspect <= this.maxAspectRatio &&
                    sizeFrac >= this.minSizeFrac && sizeFrac <= this.maxSizeFrac;
         });
+
+        dets.sort((a, b) => b.confidence - a.confidence);
+        return this._nms(dets);
     }
 
     /**
@@ -339,6 +350,10 @@ class EarLandmarkerPipeline {
 
         // Convert to CHW, normalize to [-1, 1]
         for (let i = 0; i < size * size; i++) {
+            // [-1, 1]: data/dataset.py does to_tensor() -> [0,1] then
+            // normalize(mean=0.5, std=0.5), so this is the range the model was
+            // trained on. Feeding [0,1] instead costs 15.6% test NME, and the
+            // graph accepts it silently.
             tensorData[i] = (pixels[i * 4] / 255.0 - 0.5) / 0.5;
             tensorData[size * size + i] = (pixels[i * 4 + 1] / 255.0 - 0.5) / 0.5;
             tensorData[2 * size * size + i] = (pixels[i * 4 + 2] / 255.0 - 0.5) / 0.5;
@@ -509,17 +524,19 @@ class EarLandmarkerPipeline {
     }
 
     async dispose() {
-        this.detectorSession = null;
+        if (this.detector) await this.detector.dispose();
+        this.detector = null;
         this.landmarkerSession = null;
         this.isLoaded = false;
         if (this.tracker) this.tracker.reset();
+        this._roiExpand.clear();
     }
 }
 
 
-async function createPipeline(detectorPath, landmarkerPath, options = {}) {
+async function createPipeline(facePath, detectorPath, landmarkerPath, options = {}) {
     const pipeline = new EarLandmarkerPipeline(options);
-    await pipeline.load(detectorPath, landmarkerPath);
+    await pipeline.load(facePath, detectorPath, landmarkerPath);
     return pipeline;
 }
 

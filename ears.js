@@ -1,5 +1,5 @@
 /**
- * Ear measurement from side views: Ear_Landmarker (BlazeEar + 55-point model,
+ * Ear measurement from side views: Ear_Landmarker (BlazeFace + BlazeEar + 55-point model,
  * github.com/shameem4/Ear_Landmarker; research use, trained on non-commercial data)
  * finds the ear, and each point is projected onto the fitted GNM head's ear plane to
  * get millimetres, corrected for the viewing angle.
@@ -51,8 +51,11 @@ export function loadEarPipeline() {
     .then(async ({ EarLandmarkerPipeline }) => {
       // Temporal smoothing on (the library's One Euro tracker): detectEars keeps the crop
       // steady so the tracker sees consistent coordinates
-      const pipeline = new EarLandmarkerPipeline({ confidenceThreshold: 0.5 });
-      await pipeline.load("ear/BlazeEar_web.onnx", "ear/EarLandmarker_web.onnx");
+      // Two-stage detection (BlazeEar v2): BlazeFace finds the face in the crop, then the
+      // ear model searches around it. 0.7 is the library's default; real ears score
+      // 0.97-1.0, and it drops weak false boxes at the crop's edge.
+      const pipeline = new EarLandmarkerPipeline({ confidenceThreshold: 0.7 });
+      await pipeline.load("ear/BlazeFace_web.onnx", "ear/BlazeEar_web.onnx", "ear/EarLandmarker_web.onnx");
       return pipeline;
     });
   return loading;
