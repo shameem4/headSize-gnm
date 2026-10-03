@@ -1,17 +1,16 @@
-# Ear models: non-commercial use only
+# Ear models and scripts: licence terms
 
-`BlazeEar_web.onnx` (ear detector) and `EarLandmarker_web.onnx` (55-point ear landmarks)
-come from [Ear_Landmarker](https://github.com/shameem4/Ear_Landmarker) and BlazeEar by
-Shameem Hameed, licensed CC BY-NC 4.0. They are trained on data licensed for
-non-commercial research only (iBUG ears; AudioEar2D, whose images come from FFHQ), so
-they are **not** covered by this repository's Apache License 2.0. Use them for
-non-commercial research only.
+Everything in this folder comes from [Ear_Landmarker](https://github.com/shameem4/Ear_Landmarker)
+and [BlazeEar](https://github.com/shameem4/BlazeEar) by Shameem Hameed, whose **code** is
+licensed under the Apache License 2.0. The **trained weights** are a separate question,
+because they inherit the terms of the data they were trained on.
 
-The scripts in this folder (`earlandmarker_inference.js`, `blazeear_inference.js`,
-`smoothing.js`) are from the same projects and are CC BY-NC 4.0 as published there.
+| File | Terms | Commercial use |
+|---|---|---|
+| `earlandmarker_inference.js`, `blazeear_inference.js`, `smoothing.js` | Apache-2.0 | yes |
+| `BlazeFace_web.onnx` | MediaPipe's published BlazeFace weights, unmodified (Apache-2.0, Google LLC) | yes |
+| `EarLandmarker_web.onnx` | Trained mostly on non-commercial data: iBUG ears (non-commercial research only) and AudioEar2D (CC BY 4.0 annotations on FFHQ images, which are CC BY-NC-SA 4.0). Ear_Landmarker's README states the weights are **research use only**. | **no** |
+| `BlazeEar_web.onnx` | Trained on several Roboflow Universe ear datasets and Open Images. Those carry mixed per-dataset and per-image terms (often CC BY), and BlazeEar's README doesn't state what terms the weights inherit. | **unverified**: check the source datasets before commercial use |
 
-`BlazeFace_web.onnx` is MediaPipe's published BlazeFace face detector (Apache License
-2.0, Google LLC), converted by the BlazeEar project.
-
-For commercial use, drop the ear step or replace these models with ones trained on
-commercially licensed data.
+For a commercial product, either drop the ear step or retrain the landmark model (and confirm
+or retrain the detector) on commercially licensed data. This is not legal advice.

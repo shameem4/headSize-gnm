@@ -145,13 +145,17 @@ experiments/                     Simulations, real-data findings and the web exp
 
 ## Credits and licences
 
-The code is licensed under the [Apache License 2.0](LICENSE): commercial use is allowed, provided the licence and the [NOTICE](NOTICE) file go with any copy. **The exception is the two ear models** (`ear/BlazeEar_web.onnx`, `ear/EarLandmarker_web.onnx`). They're trained on data licensed for non-commercial research only, so they're for non-commercial use (see [ear/LICENSE.md](ear/LICENSE.md)). For commercial use, drop the ear step or retrain those models on commercially licensed data.
+The code is licensed under the [Apache License 2.0](LICENSE): commercial use is allowed, provided the licence and the [NOTICE](NOTICE) file go with any copy. **The exception is the trained ear models** ([ear/LICENSE.md](ear/LICENSE.md)):
+- **`EarLandmarker_web.onnx`** is research use only, because it was trained mostly on non-commercial data (iBUG ears, and FFHQ images via AudioEar2D).
+- **`BlazeEar_web.onnx`** is unverified for commercial use. Its training datasets carry mixed terms.
+
+For commercial use, drop the ear step or retrain the ear models on commercially licensed data.
 
 It includes or loads:
 
 - **[GNM Head](https://github.com/google/GNM)** (Google, Apache-2.0). `gnm_head_fit.bin` is a trimmed export of it.
 - **MediaPipe↔GNM correspondence** from [XR Blocks](https://github.com/google/xrblocks) (Google, Apache-2.0), derived from [gnm-webcam-puppet](https://github.com/edualvarado/gnm-webcam-puppet).
-- **[Ear_Landmarker](https://github.com/shameem4/Ear_Landmarker)** and BlazeEar (CC BY-NC 4.0): the BlazeEar ear detector and the 55-point landmark model, trained on iBUG ears and AudioEar data (non-commercial research only), plus MediaPipe's BlazeFace face detector (Apache-2.0).
+- **[Ear_Landmarker](https://github.com/shameem4/Ear_Landmarker)** and **[BlazeEar](https://github.com/shameem4/BlazeEar)** (code Apache-2.0): the 55-point ear landmark model (research use only), the BlazeEar ear detector (training data terms unverified), and MediaPipe's BlazeFace face detector (Apache-2.0).
 - **Loaded from CDNs:**
   - [MediaPipe Tasks Vision](https://github.com/google-ai-edge/mediapipe) (Apache-2.0)
   - [three.js](https://threejs.org) (MIT)

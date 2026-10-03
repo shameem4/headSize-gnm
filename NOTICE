@@ -1,8 +1,8 @@
 headSize-gnm
 Copyright 2025-2026 Shameem Hameed
 
-Licensed under the Apache License, Version 2.0 (see LICENSE), EXCEPT the two ear
-models listed below, which are for non-commercial use only.
+Licensed under the Apache License, Version 2.0 (see LICENSE). The trained ear
+models in ear/ have their own terms: see the end of this file and ear/LICENSE.md.
 
 Third-party components
 ----------------------
@@ -15,7 +15,7 @@ MediaPipe <-> GNM landmark correspondence (in gnm_head_fit.bin)
   https://github.com/edualvarado/gnm-webcam-puppet)
 
 BlazeFace face detector (ear/BlazeFace_web.onnx)
-  MediaPipe's published BlazeFace weights, converted by the BlazeEar project.
+  MediaPipe's published BlazeFace weights, unmodified (run by BlazeEar's two-stage pipeline).
   MediaPipe: Copyright Google LLC. Apache License 2.0.
   https://github.com/google-ai-edge/mediapipe
 
@@ -23,11 +23,16 @@ Loaded at runtime from CDNs (not redistributed here): MediaPipe Tasks Vision
 (Apache-2.0), three.js (MIT), ONNX Runtime Web (MIT), js-aruco2 (MIT),
 fflate (MIT).
 
-NON-COMMERCIAL: ear models
---------------------------
-ear/BlazeEar_web.onnx and ear/EarLandmarker_web.onnx, with their inference
-scripts in ear/, come from Ear_Landmarker and BlazeEar by Shameem Hameed
-(https://github.com/shameem4/Ear_Landmarker). The models are trained on data
-licensed for non-commercial research only (iBUG ears; AudioEar2D, whose images
-come from FFHQ), so they are NOT covered by the Apache License: use them for
-non-commercial research only. See ear/LICENSE.md.
+Ear models and scripts (ear/)
+-----------------------------
+From Ear_Landmarker and BlazeEar by Shameem Hameed
+(https://github.com/shameem4/Ear_Landmarker, https://github.com/shameem4/BlazeEar).
+The inference scripts are Apache License 2.0.
+
+The trained weights inherit their training data's terms:
+  ear/EarLandmarker_web.onnx  RESEARCH USE ONLY: trained mostly on iBUG ears
+                              (non-commercial research only) and AudioEar2D (images
+                              from FFHQ, CC BY-NC-SA 4.0).
+  ear/BlazeEar_web.onnx       Unverified for commercial use: trained on Roboflow
+                              Universe ear datasets and Open Images (mixed terms).
+See ear/LICENSE.md.
