@@ -10,7 +10,7 @@ because they inherit the terms of the data they were trained on.
 | `earlandmarker_inference.js`, `blazeear_inference.js`, `smoothing.js` | Apache-2.0 | yes |
 | `BlazeFace_web.onnx` | MediaPipe's published BlazeFace weights, unmodified (Apache-2.0, Google LLC) | yes |
 | `EarLandmarker_web.onnx` | Trained mostly on non-commercial data: iBUG ears (non-commercial research only) and AudioEar2D (CC BY 4.0 annotations on FFHQ images, which are CC BY-NC-SA 4.0). Ear_Landmarker's README states the weights are **research use only**. | **no** |
-| `BlazeEar_web.onnx` | Trained on several Roboflow Universe ear datasets and Open Images. Those carry mixed per-dataset and per-image terms (often CC BY), and BlazeEar's README doesn't state what terms the weights inherit. | **unverified**: check the source datasets before commercial use |
+| `BlazeEar_web.onnx` | Apache-2.0: BlazeEar's README states its code, architecture and trained weights are Apache-2.0. Trained on Open Images and Roboflow Universe ear datasets (CC BY terms); no training data is redistributed. | yes |
 
-For a commercial product, either drop the ear step or retrain the landmark model (and confirm
-or retrain the detector) on commercially licensed data. This is not legal advice.
+For a commercial product, either drop the landmark step or retrain the landmark model on
+commercially licensed data. This is not legal advice.

@@ -33,6 +33,6 @@ The trained weights inherit their training data's terms:
   ear/EarLandmarker_web.onnx  RESEARCH USE ONLY: trained mostly on iBUG ears
                               (non-commercial research only) and AudioEar2D (images
                               from FFHQ, CC BY-NC-SA 4.0).
-  ear/BlazeEar_web.onnx       Unverified for commercial use: trained on Roboflow
-                              Universe ear datasets and Open Images (mixed terms).
+  ear/BlazeEar_web.onnx       Apache License 2.0, as stated by BlazeEar (trained on
+                              Open Images and Roboflow Universe ear datasets).
 See ear/LICENSE.md.
