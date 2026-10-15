@@ -2,7 +2,7 @@ headSize-gnm
 Copyright 2025-2026 Shameem Hameed
 
 Licensed under the Apache License, Version 2.0 (see LICENSE). The trained ear
-models in ear/ have their own terms: see the end of this file and ear/LICENSE.md.
+models in ear/ are Apache-2.0 too: see the end of this file and ear/LICENSE.md.
 
 Third-party components
 ----------------------
@@ -29,10 +29,10 @@ From Ear_Landmarker and BlazeEar by Shameem Hameed
 (https://github.com/shameem4/Ear_Landmarker, https://github.com/shameem4/BlazeEar).
 The inference scripts are Apache License 2.0.
 
-The trained weights inherit their training data's terms:
-  ear/EarLandmarker_web.onnx  RESEARCH USE ONLY: trained mostly on iBUG ears
-                              (non-commercial research only) and AudioEar2D (images
-                              from FFHQ, CC BY-NC-SA 4.0).
+The trained weights:
+  ear/EarLandmarker_web.onnx  Apache License 2.0, as stated by Ear_Landmarker (trained
+                              on commissioned annotations of images vetted to exclude
+                              non-commercial licences; see its NOTICE).
   ear/BlazeEar_web.onnx       Apache License 2.0, as stated by BlazeEar (trained on
                               Open Images and Roboflow Universe ear datasets).
 See ear/LICENSE.md.

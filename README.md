@@ -96,7 +96,7 @@ All values are in mm. The simulation draws its test heads from GNM itself, so it
 | Right ear length | 66.6–70.5 mm | ~68 mm (ruler) |
 | Right ear width | 37.5–39.8 mm | >36 mm (ruler, measured as above) |
 
-The ear values are corrected for each run's scale error.
+The ear values are corrected for each run's scale error. They were measured with the earlier ear models; on four still test images the current models give ear sizes within about 2.5% of those.
 
 **Known limits:**
 - **Validation:** only one person has been checked; more people with tape measurements are the most useful next step.
@@ -145,15 +145,13 @@ experiments/                     Simulations, real-data findings and the web exp
 
 ## Credits and licences
 
-The code is licensed under the [Apache License 2.0](LICENSE): commercial use is allowed, provided the licence and the [NOTICE](NOTICE) file go with any copy. **The one exception is the ear landmark model** (`ear/EarLandmarker_web.onnx`, see [ear/LICENSE.md](ear/LICENSE.md)). It's research use only, because it was trained mostly on non-commercial data (iBUG ears, and FFHQ images via AudioEar2D). The ear and face detectors (BlazeEar, BlazeFace) are Apache-2.0.
-
-For commercial use, drop the ear step or retrain the landmark model on commercially licensed data.
+The code is licensed under the [Apache License 2.0](LICENSE): commercial use is allowed, provided the licence and the [NOTICE](NOTICE) file go with any copy. The bundled ear models (the ear landmark model, BlazeEar and BlazeFace) are Apache-2.0 as well, per their upstream projects; see [ear/LICENSE.md](ear/LICENSE.md).
 
 It includes or loads:
 
 - **[GNM Head](https://github.com/google/GNM)** (Google, Apache-2.0). `gnm_head_fit.bin` is a trimmed export of it.
 - **MediaPipe↔GNM correspondence** from [XR Blocks](https://github.com/google/xrblocks) (Google, Apache-2.0), derived from [gnm-webcam-puppet](https://github.com/edualvarado/gnm-webcam-puppet).
-- **[Ear_Landmarker](https://github.com/shameem4/Ear_Landmarker)** and **[BlazeEar](https://github.com/shameem4/BlazeEar)** (code Apache-2.0): the 55-point ear landmark model (research use only), the BlazeEar ear detector (Apache-2.0), and MediaPipe's BlazeFace face detector (Apache-2.0).
+- **[Ear_Landmarker](https://github.com/shameem4/Ear_Landmarker)** and **[BlazeEar](https://github.com/shameem4/BlazeEar)** (code Apache-2.0): the 55-point ear landmark model, the BlazeEar ear detector and MediaPipe's BlazeFace face detector (all Apache-2.0).
 - **Loaded from CDNs:**
   - [MediaPipe Tasks Vision](https://github.com/google-ai-edge/mediapipe) (Apache-2.0)
   - [three.js](https://threejs.org) (MIT)

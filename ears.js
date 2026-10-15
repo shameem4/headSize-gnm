@@ -1,6 +1,6 @@
 /**
  * Ear measurement from side views: Ear_Landmarker (BlazeFace + BlazeEar + 55-point model,
- * github.com/shameem4/Ear_Landmarker; the landmark model is research use only, see
+ * github.com/shameem4/Ear_Landmarker; licences in
  * ear/LICENSE.md)
  * finds the ear, and each point is projected onto the fitted GNM head's ear plane to
  * get millimetres, corrected for the viewing angle.
