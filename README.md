@@ -63,7 +63,7 @@ flowchart TD
   - The size comes from the iris; GNM supplies only the shape. GNM's own guess at size, from face proportions, was about 5% off on a real face.
 - **Measurements** are taken on the fitted mesh, tape-measure style. Examples: circumference is the widest loop in a band above the brows; temple width is across the model's temple region.
 - **Ears:**
-  - [Ear_Landmarker](https://github.com/shameem4/Ear_Landmarker) finds 55 ear points (iBUG numbering) on a crop around the head. Each point is projected onto the fitted head's ear plane, which corrects for distance and viewing angle.
+  - [Ear_Landmarker](https://github.com/shameem4/Ear_Landmarker) finds 55 ear points (iBUG numbering) on a crop around the head. Ears are followed from frame to frame by BlazeEar's shared tracker, with the points smoothed per ear. Each point is projected onto the fitted head's ear plane, which corrects for distance and viewing angle.
   - **Length** runs from the top of the rim (helix) to the lowest point of the lobe, along the ear's own axis.
   - **Width** runs across that axis, from where the top of the ear joins the head to the back of the rim. That's also how to check it with a ruler.
 
@@ -138,7 +138,8 @@ view3d.js                        Three.js wireframe head over the video
 guide.js, glasses.js             Capture guide, glasses detection
 calibrate.js                     Card calibration: automatic edge finding, pixelation
 marker.js, marker.html           Printed ArUco marker calibration
-ears.js, ear/                    Ear measurement; Ear_Landmarker models (BlazeFace, BlazeEar, landmarks; ONNX) and inference
+ears.js, ear/                    Ear measurement; models (BlazeFace, BlazeEar, landmarks; ONNX), inference and the shared
+                                 ear tracker, vendored unchanged from Ear_Landmarker and BlazeEar
 snapshot.js                      Snapshot images and zip
 experiments/                     Simulations, real-data findings and the web export (Python)
 ```
